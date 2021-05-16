@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
 
 use crate::struct_fields;
+use crate::sort_direction::SortDirection;
 
 
 #[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -79,8 +80,8 @@ impl Person {
     }
 
 
-    fn cmp_field(a: &Self, b: &Self, field: &str) -> Ordering {
-        match field {
+    fn cmp_field(a: &Self, b: &Self, field: &str, direction: &SortDirection) -> Ordering {
+        let ord = match field {
             "first_name" => a.first_name.cmp(&b.first_name),
             "last_name" => a.last_name.cmp(&b.last_name),
             "email" => a.email.cmp(&b.email),
@@ -90,20 +91,26 @@ impl Person {
                 warn!("Field \"{}\" not found: ignoring.", field);
                 Ordering::Equal
             }
-        }
-    }    
+        };
 
-    fn cmp_order_by_fields_impl(a: &Self, b: &Self, fields: &Vec<&str>, prev: Ordering) -> Ordering {
+        match direction {
+            SortDirection::Desc => ord.reverse(),
+            _ => ord
+        }
+    }
+
+
+    fn cmp_order_by_fields_impl(a: &Self, b: &Self, fields: &Vec<(&str, &SortDirection)>, prev: Ordering) -> Ordering {
         if fields.len() == 0 {
             return prev
         }
     
         match prev {
-            Ordering::Equal => {            
+            Ordering::Equal => {
                 let rest = fields[1..].to_vec();
-                let field = fields[0];
+                let (field, direction) = fields[0];
             
-                match Self::cmp_field(a, b, field) {
+                match Self::cmp_field(a, b, field, direction) {
                     Ordering::Equal => Self::cmp_order_by_fields_impl(a, b, &rest, prev),
                     x => x
                 }
@@ -112,7 +119,7 @@ impl Person {
         }    
     }
 
-    pub fn cmp_order_by_fields(a: &Self, b: &Self, fields: &Vec<&str>) -> Ordering {
+    pub fn cmp_order_by_fields(a: &Self, b: &Self, fields: &Vec<(&str, &SortDirection)>) -> Ordering {
         match fields.len() {
             0 => a.cmp(b),
             _ => Self::cmp_order_by_fields_impl(a, b, fields, Ordering::Equal)

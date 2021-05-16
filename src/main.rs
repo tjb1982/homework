@@ -1,7 +1,7 @@
 use std::{io::{self, BufReader, BufRead}, path::PathBuf};
 use csv;
 use clap::{AppSettings, Clap};
-use log::{LevelFilter};
+use log::LevelFilter;
 use log4rs::{
     Config,
     Handle,
@@ -11,10 +11,13 @@ use log4rs::{
 };
 
 mod person;
-use person::{Person};
+use person::Person;
 
 mod struct_fields;
 use struct_fields::StructFieldDeserialize;
+
+mod sort_direction;
+use crate::sort_direction::SortDirection;
 
 
 #[derive(Clap)]
@@ -45,6 +48,12 @@ struct Opts {
 
     #[clap(short = 'f', long, about = "Sequential list of fields to sort the output.")]
     fields: Vec<String>,
+
+    #[clap(short = 'D', long, default_value = "asc")]
+    sort_direction: &'static SortDirection,
+
+    #[clap(short = 'd', long)]
+    sort_direction_mappings: Vec<&'static SortDirection>,
 
     #[clap(name = "FILE", parse(from_os_str), about = "CSV input files...")]
     files: Vec<PathBuf>,
@@ -127,11 +136,25 @@ fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
 
 }
 
+fn sorting_fields(opts: &Opts) -> Vec<(&str, &SortDirection)> {
+    let mut sort_direction_mappings = opts.sort_direction_mappings.clone();
+    let field_names: Vec<&str> = opts.fields.iter()
+        .map(String::as_str)
+        .collect();
+
+    sort_direction_mappings.reverse();
+
+    field_names.iter().map(|&name| match sort_direction_mappings.pop() {
+        Some(sd) => (name, sd),
+        None => (name, opts.sort_direction)
+    }).collect()
+}
+
 
 fn main() -> io::Result<()> {
     let opts: Opts = Opts::parse();
     let mut people: Vec<Person> = vec![];
-    let fields: Vec<&str> = opts.fields.iter().map(String::as_str).collect();
+    let fields = sorting_fields(&opts);
 
     set_console_logger().unwrap();
 

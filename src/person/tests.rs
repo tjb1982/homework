@@ -34,7 +34,7 @@ mod sorting {
         ]
     }
     
-    fn create_people_sorted_by_fields(fields: Vec<&str>) -> Vec<Person> {
+    fn create_people_sorted_by_fields(fields: Vec<(&str, &SortDirection)>) -> Vec<Person> {
         let mut people = create_people();
 
         people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
@@ -63,7 +63,9 @@ mod sorting {
 
     #[test]
     fn first_name_sort() {
-        let people = create_people_sorted_by_fields(vec!["first_name"]);
+        let people = create_people_sorted_by_fields(vec![
+            ("first_name", &SortDirection::Asc)
+        ]);
         
         assert!(people[0].first_name.eq("Chester"));
         assert!(people[1].first_name.eq("June"));
@@ -73,7 +75,9 @@ mod sorting {
 
     #[test]
     fn last_name_sort() {
-        let people = create_people_sorted_by_fields(vec!["last_name"]);
+        let people = create_people_sorted_by_fields(vec![
+            ("last_name", &SortDirection::Asc)
+        ]);
 
         assert!(people[0].first_name.eq("Tom"));
         assert!(people[1].first_name.eq("Chester"));
@@ -83,11 +87,14 @@ mod sorting {
 
     #[test]
     fn last_then_first_sort() {
-        let people = create_people_sorted_by_fields(vec!["last_name", "first_name"]);
+        let people = create_people_sorted_by_fields(vec![
+            ("last_name", &SortDirection::Asc),
+            ("first_name", &SortDirection::Desc)
+        ]);
 
-        assert!(people[0].first_name.eq("Chester"));
+        assert!(people[0].first_name.eq("Tom"));
         assert!(people[1].first_name.eq("June"));
-        assert!(people[2].first_name.eq("Tom"));
+        assert!(people[2].first_name.eq("Chester"));
         assert!(people[3].first_name.eq("Rachel"));
     }
 }
