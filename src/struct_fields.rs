@@ -14,7 +14,7 @@ impl<'de> Deserializer<'de> for StructFieldsDeserializer<'de> {
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
         where V: de::Visitor<'de>
     {
-        Err(de::Error::custom("I'm just here for the fields"))
+        Err(de::Error::custom("please disregard this error"))
     }
 
     fn deserialize_struct<V>(

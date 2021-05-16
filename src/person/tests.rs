@@ -2,17 +2,22 @@
 
 use super::*;
 
+
 #[test]
 fn new_person() {
-    let person = Person::new(
-        "Tom", "Brennan", "tjb1982@gmail.com", "red", "1982-08-19"
-    );
+    let first_name = "Tom";
+    let last_name = "Brennan";
+    let email = "tjb1982@gmail.com";
+    let favorite_color = "red";
+    let dob = "1982-08-19T00:00:00Z";
 
-    assert!(person.first_name.eq("Tom"));
-    assert!(person.last_name.eq("Brennan"));
-    assert!(person.email.eq("tjb1982@gmail.com"));
-    assert!(person.favorite_color.eq("red"));
-    assert!(person.dob.eq("1982-08-19"));
+    let person = Person::new(first_name, last_name, email, favorite_color, dob);
+
+    assert!(person.first_name.eq(first_name));
+    assert!(person.last_name.eq(last_name));
+    assert!(person.email.eq(email));
+    assert!(person.favorite_color.eq(favorite_color));
+    assert!(person.dob.eq(&Some(DateTime::parse_from_rfc3339(dob).unwrap().with_timezone(&Utc))));
 }
 
 
@@ -22,8 +27,8 @@ mod sorting {
 
     fn create_people() -> [Person; 4] {
         [
-            Person::new("Tom","Brennan", "tjb1982@gmail.com", "red", "1982-08-19"),
-            Person::new("Rachel","Fuller", "tjb1982@gmail.com", "green", "1970-08-10"),
+            Person::new("Tom","Brennan", "tjb1982@gmail.com", "red", "1982-08-19T00:00:00Z"),
+            Person::new("Rachel","Fuller", "tjb1982@gmail.com", "green", "1970-08-10T00:00:00Z"),
             Person::new("Chester","Brennan", "", "", ""),
             Person::new("June","Brennan", "", "", ""),
         ]
@@ -87,6 +92,7 @@ mod sorting {
     }
 }
 
+#[allow(unused_imports)]
 mod struct_fields {
     use crate::struct_fields::StructFieldDeserialize;
     use super::*;

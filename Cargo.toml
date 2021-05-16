@@ -12,3 +12,4 @@ csv = "1.1.6"
 serde = { version = "1.0.126", features = ["derive"] }
 clap = "3.0.0-beta.2"
 log4rs = { version = "1.0.0", features = ["ansi_writer"] }
+chrono = "0.4.19"

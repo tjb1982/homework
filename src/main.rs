@@ -51,6 +51,21 @@ struct Opts {
 }
 
 
+fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
+
+    let encoder: Box<dyn Encode> = Box::new(PatternEncoder::new("{d} {h({l})} {t} - {m}{n}"));
+    let stderr = ConsoleAppender::builder().encoder(encoder).target(Target::Stderr).build();
+    let config = Config::builder()
+        .appender(
+            Appender::builder().build("stderr", Box::new(stderr))
+        )
+        .build(Root::builder().appender("stderr").build(LevelFilter::Warn))
+        .unwrap();
+
+    log4rs::init_config(config)
+}
+
+
 fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
 
     let mut input_separator_mappings = opts.input_separator_mappings.clone();
@@ -93,18 +108,23 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
     Ok(())
 }
 
-fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
 
-    let encoder: Box<dyn Encode> = Box::new(PatternEncoder::new("{d} {h({l})} {t} - {m}{n}"));
-    let stderr = ConsoleAppender::builder().encoder(encoder).target(Target::Stderr).build();
-    let config = Config::builder()
-        .appender(
-            Appender::builder().build("stderr", Box::new(stderr))
-        )
-        .build(Root::builder().appender("stderr").build(LevelFilter::Warn))
-        .unwrap();
+fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
+    let mut writer = csv::WriterBuilder::new()
+        .delimiter(opts.output_separator as u8)
+        .has_headers(opts.output_has_header)
+        .terminator(csv::Terminator::CRLF)
+        .from_writer(io::stdout());
 
-    log4rs::init_config(config)
+    for result in people.iter().map(|p| writer.serialize(p)) {
+        match result {
+            Err(e) => log::warn!("Problem serializing person: {}", e),
+            _ => ()
+        }
+    }
+
+    writer.flush()
+
 }
 
 
@@ -116,26 +136,13 @@ fn main() -> io::Result<()> {
     set_console_logger().unwrap();
 
     if opts.available_fields {
-        println!("Sortable fields: {:#?}", Person::struct_fields());
+        println!("{:?}", Person::struct_fields());
         return Ok(());
     }
-
-    let mut writer = csv::WriterBuilder::new()
-        .delimiter(opts.output_separator as u8)
-        .has_headers(opts.output_has_header)
-        .terminator(csv::Terminator::CRLF)
-        .from_writer(io::stdout());
 
     read_input_files(&opts, &mut people)?;
 
     people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
 
-    for result in people.iter().map(|p| writer.serialize(p)) {
-        match result {
-            Err(e) => log::warn!("Problem serializing person: {}", e),
-            _ => ()
-        }
-    }
-
-    writer.flush()
+    write_output(&opts, &people)
 }
