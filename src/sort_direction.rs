@@ -16,7 +16,7 @@ impl FromStr for &SortDirection {
             "asc" => Ok(&SortDirection::Asc),
             "desc" => Ok(&SortDirection::Desc),
             _ => {
-                log::warn!("Unable to parse sort direction \"{}\"", direction);
+                log::warn!("Unable to parse sort direction \"{}.\" Falling back to \"asc.\"", direction);
                 Ok(&SortDirection::Asc)
             },
         }

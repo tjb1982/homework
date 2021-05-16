@@ -9,7 +9,7 @@ fn new_person() {
     let last_name = "Brennan";
     let email = "tjb1982@gmail.com";
     let favorite_color = "red";
-    let dob = "1982-08-19T00:00:00Z";
+    let dob = "8/19/1982";
 
     let person = Person::new(first_name, last_name, email, favorite_color, dob);
 
@@ -17,7 +17,7 @@ fn new_person() {
     assert!(person.last_name.eq(last_name));
     assert!(person.email.eq(email));
     assert!(person.favorite_color.eq(favorite_color));
-    assert!(person.dob.eq(&Some(DateTime::parse_from_rfc3339(dob).unwrap().with_timezone(&Utc))));
+    assert!(person.dob.eq(&Some(NaiveDate::parse_from_str(dob, FORMAT).unwrap())));
 }
 
 
@@ -27,8 +27,8 @@ mod sorting {
 
     fn create_people() -> [Person; 4] {
         [
-            Person::new("Tom","Brennan", "tjb1982@gmail.com", "red", "1982-08-19T00:00:00Z"),
-            Person::new("Rachel","Fuller", "tjb1982@gmail.com", "green", "1970-08-10T00:00:00Z"),
+            Person::new("Tom","Brennan", "tjb1982@gmail.com", "red", "8/19/1982"),
+            Person::new("Rachel","Fuller", "tjb1982@gmail.com", "green", "8/10/1970"),
             Person::new("Chester","Brennan", "", "", ""),
             Person::new("June","Brennan", "", "", ""),
         ]

@@ -152,11 +152,11 @@ fn sorting_fields(opts: &Opts) -> Vec<(&str, &SortDirection)> {
 
 
 fn main() -> io::Result<()> {
+    set_console_logger().unwrap();
+
     let opts: Opts = Opts::parse();
     let mut people: Vec<Person> = vec![];
     let fields = sorting_fields(&opts);
-
-    set_console_logger().unwrap();
 
     if opts.available_fields {
         println!("{:?}", Person::struct_fields());

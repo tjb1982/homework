@@ -1,7 +1,7 @@
 use std::{cmp::Ordering};
 use log::{warn};
 use serde::{Serialize, Deserialize};
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 
 use crate::struct_fields;
 use crate::sort_direction::SortDirection;
@@ -15,21 +15,24 @@ pub struct Person {
     favorite_color: String,
 
     #[serde(with = "date_format")]
-    dob: Option<chrono::DateTime<chrono::Utc>>,
+    dob: Option<NaiveDate>,
 }
+
+const FORMAT: &'static str = "%-m/%d/%Y";
 
 mod date_format {
     use serde::{self, Serializer, Deserializer, Deserialize};
-    use chrono::{DateTime, Utc};
+    use chrono::NaiveDate;
+    use super::FORMAT;
 
     pub fn serialize<S>(
-        date: &Option<DateTime<Utc>>,
+        date: &Option<NaiveDate>,
         serializer: S
     ) -> Result<S::Ok, S::Error>
         where S: Serializer
     {
         let s = match date {
-            Some(date) => date.to_rfc3339(),
+            Some(date) => date.format(FORMAT).to_string(),
             None => String::new()
         };
         serializer.serialize_str(s.as_str())
@@ -37,13 +40,18 @@ mod date_format {
 
     pub fn deserialize<'de, D>(
         deserializer: D
-    ) -> Result<Option<DateTime<Utc>>, D::Error>
+    ) -> Result<Option<NaiveDate>, D::Error>
         where D: Deserializer<'de>
     {
         let s = String::deserialize(deserializer)?;
-        let d = match DateTime::parse_from_rfc3339(s.as_str()) {
-            Ok(d) => Some(d.with_timezone(&Utc)),
-            _ => None
+        let d = match NaiveDate::parse_from_str(s.as_str(), FORMAT) {
+            Ok(d) => Some(d),
+            Err(e) => {
+                if !e.to_string().eq("premature end of input") {
+                    log::warn!("{}", e);
+                }
+                None
+            }
         };
         
         Ok(d)
@@ -72,8 +80,8 @@ impl Person {
             last_name: String::from(last_name),
             email: String::from(email),
             favorite_color: String::from(favorite_color),
-            dob: match DateTime::parse_from_rfc3339(dob) {
-                Ok(dob) => Some(dob.with_timezone(&Utc)),
+            dob: match NaiveDate::parse_from_str(dob, FORMAT) {
+                Ok(dob) => Some(dob),
                 _ => None
             }
         }
