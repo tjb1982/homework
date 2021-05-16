@@ -11,24 +11,40 @@ use log4rs::{
 };
 
 mod person;
-use person::Person;
+use person::{Person};
+
+mod struct_fields;
+use struct_fields::StructFieldDeserialize;
 
 
 #[derive(Clap)]
 #[clap(version = env!("CARGO_PKG_VERSION"), author = env!("CARGO_PKG_AUTHORS"))]
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
-    #[clap(short, long, default_value = ",")]
-    input_delimiter: char,
+
+    #[clap(short, long, about = "Display all available sortable fields and exit.")]
+    available_fields: bool,
+
+    #[clap(short = 'S', long = "default-field-separator", default_value = ",")]
+    input_separator: char,
+
+    #[clap(short = 's', about = "Map separators to each respective input file (falling back to the default).")]
+    input_separator_mappings: Vec<char>,
 
     #[clap(short, long, default_value = ",")]
-    output_delimiter: char,
+    output_separator: char,
 
-    #[clap(long, about = "Input contains header row")]
-    has_headers: bool,
+    #[clap(short = 'E', long, about = "All inputs contain a header row, unless otherwise indicated.")]
+    input_has_header: bool,
 
-    #[clap(short, long)]
-    attrs: Vec<String>,
+    #[clap(short = 'e', about = "Map `has_header` to each respective input file (falling back to the default: false).")]
+    input_has_header_mappings: Vec<bool>,
+
+    #[clap(short = 't', long, about = "Output will contain a header row.")]
+    output_has_header: bool,
+
+    #[clap(short = 'f', long, about = "Sequential list of fields to sort the output.")]
+    fields: Vec<String>,
 
     #[clap(name = "FILE", parse(from_os_str), about = "CSV input files...")]
     files: Vec<PathBuf>,
@@ -37,6 +53,12 @@ struct Opts {
 
 fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
 
+    let mut input_separator_mappings = opts.input_separator_mappings.clone();
+    let mut input_has_header_mappings = opts.input_has_header_mappings.clone();
+
+    input_separator_mappings.reverse();
+    input_has_header_mappings.reverse();
+
     for path in opts.files.iter() {
 
         let input: Box<dyn BufRead> = match path.to_str().unwrap() {
@@ -44,9 +66,19 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
             x => Box::new(BufReader::new(std::fs::File::open(x).unwrap()))
         };
 
+        let input_separator = match input_separator_mappings.pop() {
+            None => opts.input_separator,
+            Some(c) => c
+        } as u8;
+
+        let input_has_header = match input_has_header_mappings.pop() {
+            None => opts.input_has_header,
+            Some(b) => b
+        };
+
         let mut reader = csv::ReaderBuilder::new()
-            .delimiter(opts.input_delimiter as u8)
-            .has_headers(opts.has_headers)
+            .delimiter(input_separator)
+            .has_headers(input_has_header)
             .trim(csv::Trim::All)
             .from_reader(input);
 
@@ -79,19 +111,24 @@ fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
 fn main() -> io::Result<()> {
     let opts: Opts = Opts::parse();
     let mut people: Vec<Person> = vec![];
-    let attrs: Vec<&str> = opts.attrs.iter().map(String::as_str).collect();
+    let fields: Vec<&str> = opts.fields.iter().map(String::as_str).collect();
 
     set_console_logger().unwrap();
 
-    read_input_files(&opts, &mut people)?;
-
-    people.sort_by(|a, b| Person::cmp_order_by_attrs(a, b, &attrs));
+    if opts.available_fields {
+        println!("Sortable fields: {:#?}", Person::struct_fields());
+        return Ok(());
+    }
 
     let mut writer = csv::WriterBuilder::new()
-        .delimiter(opts.output_delimiter as u8)
-        .has_headers(opts.has_headers)
+        .delimiter(opts.output_separator as u8)
+        .has_headers(opts.output_has_header)
         .terminator(csv::Terminator::CRLF)
         .from_writer(io::stdout());
+
+    read_input_files(&opts, &mut people)?;
+
+    people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
 
     for result in people.iter().map(|p| writer.serialize(p)) {
         match result {
