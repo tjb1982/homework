@@ -25,34 +25,34 @@ use crate::sort_direction::SortDirection;
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
 
-    #[clap(short, long, about = "Display all available sortable fields and exit.")]
+    #[clap(short, long, about = "Display all available sorting fields and exit")]
     available_fields: bool,
 
-    #[clap(short = 'S', long = "default-field-separator", default_value = ",")]
+    #[clap(short = 'S', long = "field-separator", default_value = ",")]
     input_separator: char,
 
-    #[clap(short = 's', about = "Map separators to each respective input file (falling back to the default).")]
+    #[clap(short = 's', about = "Map `--field-separator` to each respective input file (then falling back to the global `--field-separator`)")]
     input_separator_mappings: Vec<char>,
 
     #[clap(short, long, default_value = ",")]
     output_separator: char,
 
-    #[clap(short = 'E', long, about = "All inputs contain a header row, unless otherwise indicated.")]
+    #[clap(short = 'E', long, about = "Inputs contain header row")]
     input_has_header: bool,
 
-    #[clap(short = 'e', about = "Map `has_header` to each respective input file (falling back to the default: false).")]
+    #[clap(short = 'e', about = "Map `--input-has-header` to each respective input file (then falling back to `--input-has-header`)")]
     input_has_header_mappings: Vec<bool>,
 
-    #[clap(short = 't', long, about = "Output will contain a header row.")]
+    #[clap(short = 't', long, about = "Output will contain a header row")]
     output_has_header: bool,
 
-    #[clap(short = 'f', long, about = "Sequential list of fields to sort the output.")]
+    #[clap(short = 'f', long = "field", about = "Sequential list of fields to sort the output")]
     fields: Vec<String>,
 
     #[clap(short = 'D', long, default_value = "asc")]
     sort_direction: &'static SortDirection,
 
-    #[clap(short = 'd', long)]
+    #[clap(short = 'd', long, about = "Sequential list of sort directions, mapped to each provided `--field`")]
     sort_direction_mappings: Vec<&'static SortDirection>,
 
     #[clap(name = "FILE", parse(from_os_str), about = "CSV input files...")]

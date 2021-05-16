@@ -46,12 +46,11 @@ mod date_format {
         let s = String::deserialize(deserializer)?;
         let d = match NaiveDate::parse_from_str(s.as_str(), FORMAT) {
             Ok(d) => Some(d),
-            Err(e) => {
-                if !e.to_string().eq("premature end of input") {
-                    log::warn!("{}", e);
-                }
+            Err(e) if e.to_string().eq("premature end of input") => {
+                log::trace!("{}: missing optional field", e);
                 None
-            }
+            },
+            Err(e) => panic!("{}", e)
         };
         
         Ok(d)
