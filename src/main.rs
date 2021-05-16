@@ -1,9 +1,17 @@
 use std::{io::{self, BufReader, BufRead}, path::PathBuf};
 use csv;
+use clap::{AppSettings, Clap};
+use log::{LevelFilter};
+use log4rs::{
+    Config,
+    Handle,
+    append::console::{ConsoleAppender, Target},
+    config::{Appender, Root},
+    encode::{Encode, pattern::PatternEncoder}
+};
 
 mod person;
 use person::Person;
-use clap::{AppSettings, Clap};
 
 
 #[derive(Clap)]
@@ -42,14 +50,29 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
             .trim(csv::Trim::All)
             .from_reader(input);
 
-        people.extend(
-            reader.deserialize::<Person>()
-                .map(Result::unwrap).collect::<Vec<Person>>()
-        );
-
+        for result in reader.deserialize::<Person>() {
+            match result {
+                Err(e) => log::warn!("Problem deserializing person: {}", e),
+                Ok(p) => people.push(p)
+            }
+        }
     }
 
     Ok(())
+}
+
+fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
+
+    let encoder: Box<dyn Encode> = Box::new(PatternEncoder::new("{d} {h({l})} {t} - {m}{n}"));
+    let stderr = ConsoleAppender::builder().encoder(encoder).target(Target::Stderr).build();
+    let config = Config::builder()
+        .appender(
+            Appender::builder().build("stderr", Box::new(stderr))
+        )
+        .build(Root::builder().appender("stderr").build(LevelFilter::Warn))
+        .unwrap();
+
+    log4rs::init_config(config)
 }
 
 
@@ -57,6 +80,8 @@ fn main() -> io::Result<()> {
     let opts: Opts = Opts::parse();
     let mut people: Vec<Person> = vec![];
     let attrs: Vec<&str> = opts.attrs.iter().map(String::as_str).collect();
+
+    set_console_logger().unwrap();
 
     read_input_files(&opts, &mut people)?;
 
@@ -68,8 +93,11 @@ fn main() -> io::Result<()> {
         .terminator(csv::Terminator::CRLF)
         .from_writer(io::stdout());
 
-    for person in people {
-        writer.serialize(person)?;
+    for result in people.iter().map(|p| writer.serialize(p)) {
+        match result {
+            Err(e) => log::warn!("Problem serializing person: {}", e),
+            _ => ()
+        }
     }
 
     writer.flush()
