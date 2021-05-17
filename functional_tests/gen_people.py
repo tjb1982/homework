@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 colors = ["red", "green", "blue", "yellow", "orange", "violet", "white", "black", "indigo"]
-tlds = ["com", "gov", "org", "edu", "biz", "co.uk", "dk", "sv", "se", "de"]
+tlds = ["com", "gov", "org", "edu", "biz", "co.uk", "dk", "se", "de"]
 
 
 def random_name(length = 10):
