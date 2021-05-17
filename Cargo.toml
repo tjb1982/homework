@@ -14,3 +14,4 @@ clap = "3.0.0-beta.2"
 log4rs = { version = "1.0.0", features = ["ansi_writer"] }
 chrono = "0.4.19"
 tokio = { version = "1.6.0", features = ["full"] }
+warp = "0.3"

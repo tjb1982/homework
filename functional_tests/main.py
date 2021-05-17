@@ -3,12 +3,13 @@ import sys, tempfile, csv, subprocess, pandas, pprint, random, time
 
 from gen_people import random_row
 
+PROGRAM_NAME = sys.argv[1] if len(sys.argv) > 1 else None
+assert PROGRAM_NAME, "Must provide a path to the program under test. Aborting."
 
-iterations = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-name_len = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+ITERATIONS = int(sys.argv[2]) if len(sys.argv) > 2 else 100
+NAME_LEN = int(sys.argv[3]) if len(sys.argv) > 3 else 10
 
 SEPARATORS = [",", "|", " "]
-PROGRAM_NAME = "target/release/homework"
 NUM_INPUT_FILES = 10
 DATE_FORMAT = "%-m/%-d/%Y"
 
@@ -73,8 +74,8 @@ for case in test_cases:
             if has_header:
                 writer.writerow(HEADER_ROW)
 
-            for i in range(0, iterations):
-                writer.writerow(random_row(DATE_FORMAT, name_len))
+            for i in range(0, ITERATIONS):
+                writer.writerow(random_row(DATE_FORMAT, NAME_LEN))
 
     # read into memory what was just written
     for f in tmp_files:
@@ -124,7 +125,6 @@ for case in test_cases:
 
     report = {
         "testcase": case,
-        "argv": argv,
         "cmd": " ".join(argv),
         "failures": len(failures),
     }

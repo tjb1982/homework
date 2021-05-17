@@ -44,3 +44,10 @@ def random_row(fmt, name_len = 10):
         random_color(),
         random_date(fmt)
     ]
+
+
+if __name__ == "__main__":
+    import sys
+    iterations = int(sys.argv[1])
+    for i in range(0, iterations):
+        print(",".join(random_row("%-m/%-d/%Y")))

@@ -3,8 +3,7 @@ use log::{warn};
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 
-use crate::serialization;
-use crate::serialization::date_format;
+use crate::serialization::{self, date_format};
 use crate::sort_direction::SortDirection;
 
 
