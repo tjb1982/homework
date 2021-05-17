@@ -2,7 +2,7 @@ mod person;
 mod serialization;
 mod sort_direction;
 
-use std::{collections::VecDeque, io::{self, BufReader, BufRead}, path::PathBuf};
+use std::{collections::VecDeque, error::Error, io as stdio, path::PathBuf};
 use csv;
 use clap::{AppSettings, Clap};
 use log::LevelFilter;
@@ -13,6 +13,9 @@ use log4rs::{
     config::{Appender, Root},
     encode::{Encode, pattern::PatternEncoder}
 };
+
+use tokio::fs::File;
+use tokio::io::{self, AsyncReadExt};
 
 use person::Person;
 use serialization::StructFieldDeserialize;
@@ -74,17 +77,40 @@ fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
 }
 
 
-fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
+async fn read_input_file(input_field_separator: char, input_has_header: bool, path: &PathBuf) -> io::Result<Vec<Person>>
+{
+    let mut input = String::new();
+    let mut people: Vec<Person> = vec![];
+        
+    let _ = match path.to_str().unwrap() {
+        "-" => io::stdin().read_to_string(&mut input).await,
+        x => File::open(x).await?.read_to_string(&mut input).await
+    };
+
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(input_field_separator as u8)
+        .has_headers(input_has_header)
+        .trim(csv::Trim::All)
+        .from_reader(input.as_str().as_bytes());
+
+    for result in reader.deserialize::<Person>() {
+        match result {
+            Err(e) => log::warn!("Problem deserializing person: {}", e),
+            Ok(p) => people.push(p)
+        }
+    }
+    Ok(people)
+}
+
+
+async fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()>
+{
 
     let mut input_field_separator_mappings = VecDeque::from(opts.input_field_separator_mappings.clone());
     let mut input_has_header_mappings = opts.input_has_header_mappings.clone();
+    let mut futures: Vec<_> = vec![];
 
     for path in opts.files.iter() {
-
-        let input: Box<dyn BufRead> = match path.to_str().unwrap() {
-            "-" => Box::new(BufReader::new(io::stdin())),
-            x => Box::new(BufReader::new(std::fs::File::open(x).unwrap()))
-        };
 
         let input_field_separator = match input_field_separator_mappings.pop_front() {
             None => opts.input_field_separator,
@@ -96,25 +122,28 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
             Some(b) => b
         };
 
-        let mut reader = csv::ReaderBuilder::new()
-            .delimiter(input_field_separator as u8)
-            .has_headers(input_has_header)
-            .trim(csv::Trim::All)
-            .from_reader(input);
+        futures.push(read_input_file(
+            input_field_separator,
+            input_has_header,
+            path,
+        ));
+    }
 
-        for result in reader.deserialize::<Person>() {
-            match result {
-                Err(e) => log::warn!("Problem deserializing person: {}", e),
-                Ok(p) => people.push(p)
-            }
-        }
+    for f in futures {
+        people.extend(f.await?);
     }
 
     Ok(())
 }
 
 
-fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
+fn csv_err_is_broken_pipe(e: &csv::Error) -> bool
+{
+    e.source().unwrap().downcast_ref::<stdio::Error>().unwrap().kind() == stdio::ErrorKind::BrokenPipe
+}
+
+
+fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), stdio::Error> {
 
     let output_field_separator = match opts.output_field_separator {
         Some(o) => o,
@@ -125,10 +154,14 @@ fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
         .delimiter(output_field_separator as u8)
         .has_headers(opts.output_has_header)
         .terminator(csv::Terminator::CRLF)
-        .from_writer(io::stdout());
+        .from_writer(stdio::stdout());
 
     for result in people.iter().map(|p| writer.serialize(p)) {
         match result {
+            Err(e) if csv_err_is_broken_pipe(&e) => {
+                log::warn!("{}", e);
+                return Ok(())
+            },
             Err(e) => log::warn!("Problem serializing person: {}", e),
             _ => ()
         }
@@ -137,6 +170,7 @@ fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
     writer.flush()
 
 }
+
 
 fn sorting_fields(opts: &Opts) -> Vec<(&str, SortDirection)> {
     let mut sort_direction_mappings = VecDeque::from(opts.sort_direction_mappings.clone());
@@ -151,7 +185,8 @@ fn sorting_fields(opts: &Opts) -> Vec<(&str, SortDirection)> {
 }
 
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     set_console_logger().unwrap();
 
     let opts: Opts = Opts::parse();
@@ -163,7 +198,7 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    read_input_files(&opts, &mut people)?;
+    read_input_files(&opts, &mut people).await?;
 
     people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
 

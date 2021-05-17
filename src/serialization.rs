@@ -48,7 +48,7 @@ pub mod date_format {
     use serde::{self, Serializer, Deserializer, Deserialize};
     use chrono::NaiveDate;
 
-    pub const FORMAT: &'static str = "%-m/%d/%Y";
+    pub const FORMAT: &'static str = "%-m/%-d/%Y";
 
     pub fn serialize<S>(
         date: &Option<NaiveDate>,
