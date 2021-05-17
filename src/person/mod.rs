@@ -3,7 +3,8 @@ use log::{warn};
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 
-use crate::struct_fields;
+use crate::serialization;
+use crate::serialization::date_format;
 use crate::sort_direction::SortDirection;
 
 
@@ -18,51 +19,12 @@ pub struct Person {
     dob: Option<NaiveDate>,
 }
 
-const FORMAT: &'static str = "%-m/%d/%Y";
 
-mod date_format {
-    use serde::{self, Serializer, Deserializer, Deserialize};
-    use chrono::NaiveDate;
-    use super::FORMAT;
-
-    pub fn serialize<S>(
-        date: &Option<NaiveDate>,
-        serializer: S
-    ) -> Result<S::Ok, S::Error>
-        where S: Serializer
-    {
-        let s = match date {
-            Some(date) => date.format(FORMAT).to_string(),
-            None => String::new()
-        };
-        serializer.serialize_str(s.as_str())
-    }
-
-    pub fn deserialize<'de, D>(
-        deserializer: D
-    ) -> Result<Option<NaiveDate>, D::Error>
-        where D: Deserializer<'de>
-    {
-        let s = String::deserialize(deserializer)?;
-        let d = match NaiveDate::parse_from_str(s.as_str(), FORMAT) {
-            Ok(d) => Some(d),
-            Err(e) if e.to_string().eq("premature end of input") => {
-                log::trace!("{}: missing optional field", e);
-                None
-            },
-            Err(e) => panic!("{}", e)
-        };
-        
-        Ok(d)
-    }
-}
-
-
-impl struct_fields::StructFieldDeserialize for Person {
+impl serialization::StructFieldDeserialize for Person {
     fn struct_fields() -> &'static[&'static str] {
         let mut fields = None;
         
-        let _ = Self::deserialize(struct_fields::StructFieldsDeserializer {
+        let _ = Self::deserialize(serialization::StructFieldsDeserializer {
             fields: &mut fields
         });
 
@@ -79,7 +41,7 @@ impl Person {
             last_name: String::from(last_name),
             email: String::from(email),
             favorite_color: String::from(favorite_color),
-            dob: match NaiveDate::parse_from_str(dob, FORMAT) {
+            dob: match NaiveDate::parse_from_str(dob, date_format::FORMAT) {
                 Ok(dob) => Some(dob),
                 _ => None
             }
@@ -107,7 +69,7 @@ impl Person {
     }
 
 
-    fn cmp_order_by_fields_impl(a: &Self, b: &Self, fields: &Vec<(&str, &SortDirection)>, prev: Ordering) -> Ordering {
+    fn cmp_order_by_fields_impl(a: &Self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering {
         if fields.len() == 0 {
             return prev
         }
@@ -115,9 +77,9 @@ impl Person {
         match prev {
             Ordering::Equal => {
                 let rest = fields[1..].to_vec();
-                let (field, direction) = fields[0];
+                let (field, direction) = &fields[0];
             
-                match Self::cmp_field(a, b, field, direction) {
+                match Self::cmp_field(a, b, field, &direction) {
                     Ordering::Equal => Self::cmp_order_by_fields_impl(a, b, &rest, prev),
                     x => x
                 }
@@ -126,7 +88,7 @@ impl Person {
         }    
     }
 
-    pub fn cmp_order_by_fields(a: &Self, b: &Self, fields: &Vec<(&str, &SortDirection)>) -> Ordering {
+    pub fn cmp_order_by_fields(a: &Self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering {
         match fields.len() {
             0 => a.cmp(b),
             _ => Self::cmp_order_by_fields_impl(a, b, fields, Ordering::Equal)

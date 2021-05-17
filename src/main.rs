@@ -1,4 +1,8 @@
-use std::{io::{self, BufReader, BufRead}, path::PathBuf};
+mod person;
+mod serialization;
+mod sort_direction;
+
+use std::{collections::VecDeque, io::{self, BufReader, BufRead}, path::PathBuf};
 use csv;
 use clap::{AppSettings, Clap};
 use log::LevelFilter;
@@ -10,13 +14,8 @@ use log4rs::{
     encode::{Encode, pattern::PatternEncoder}
 };
 
-mod person;
 use person::Person;
-
-mod struct_fields;
-use struct_fields::StructFieldDeserialize;
-
-mod sort_direction;
+use serialization::StructFieldDeserialize;
 use crate::sort_direction::SortDirection;
 
 
@@ -28,19 +27,19 @@ struct Opts {
     #[clap(short, long, about = "Display all available sorting fields and exit")]
     available_fields: bool,
 
-    #[clap(short = 'S', long = "field-separator", default_value = ",")]
-    input_separator: char,
+    #[clap(short = 'S', long, default_value = ",")]
+    input_field_separator: char,
 
-    #[clap(short = 's', about = "Map `--field-separator` to each respective input file (then falling back to the global `--field-separator`)")]
-    input_separator_mappings: Vec<char>,
+    #[clap(short = 's', long = "input-field-separator-mapping", about = "Map `--field-separator` to each respective input file (any remaining unmapped files fall back to `--field-separator`)")]
+    input_field_separator_mappings: Vec<char>,
 
-    #[clap(short, long, default_value = ",")]
-    output_separator: char,
+    #[clap(short, long, about = "Separator to use for the output")]
+    output_field_separator: Option<char>,
 
     #[clap(short = 'E', long, about = "Inputs contain header row")]
     input_has_header: bool,
 
-    #[clap(short = 'e', about = "Map `--input-has-header` to each respective input file (then falling back to `--input-has-header`)")]
+    #[clap(short = 'e', long = "input-has-header-mapping", about = "Map `--input-has-header` to each respective input file (any remaining unmapped files fall back to `--input-has-header`)")]
     input_has_header_mappings: Vec<bool>,
 
     #[clap(short = 't', long, about = "Output will contain a header row")]
@@ -50,12 +49,12 @@ struct Opts {
     fields: Vec<String>,
 
     #[clap(short = 'D', long, default_value = "asc")]
-    sort_direction: &'static SortDirection,
+    sort_direction: SortDirection,
 
-    #[clap(short = 'd', long, about = "Sequential list of sort directions, mapped to each provided `--field`")]
-    sort_direction_mappings: Vec<&'static SortDirection>,
+    #[clap(short = 'd', long = "sort-direction-mapping", about = "Sequential list of sort directions, mapped to each provided `--field` (any remaining unmapped `--fields` fall back to `--sort-direction`)")]
+    sort_direction_mappings: Vec<SortDirection>,
 
-    #[clap(name = "FILE", parse(from_os_str), about = "CSV input files...")]
+    #[clap(name = "FILE", parse(from_os_str), about = "CSV input files...", required = true)]
     files: Vec<PathBuf>,
 }
 
@@ -77,11 +76,8 @@ fn set_console_logger() -> Result<Handle, log::SetLoggerError> {
 
 fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
 
-    let mut input_separator_mappings = opts.input_separator_mappings.clone();
+    let mut input_field_separator_mappings = VecDeque::from(opts.input_field_separator_mappings.clone());
     let mut input_has_header_mappings = opts.input_has_header_mappings.clone();
-
-    input_separator_mappings.reverse();
-    input_has_header_mappings.reverse();
 
     for path in opts.files.iter() {
 
@@ -90,10 +86,10 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
             x => Box::new(BufReader::new(std::fs::File::open(x).unwrap()))
         };
 
-        let input_separator = match input_separator_mappings.pop() {
-            None => opts.input_separator,
+        let input_field_separator = match input_field_separator_mappings.pop_front() {
+            None => opts.input_field_separator,
             Some(c) => c
-        } as u8;
+        };
 
         let input_has_header = match input_has_header_mappings.pop() {
             None => opts.input_has_header,
@@ -101,7 +97,7 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
         };
 
         let mut reader = csv::ReaderBuilder::new()
-            .delimiter(input_separator)
+            .delimiter(input_field_separator as u8)
             .has_headers(input_has_header)
             .trim(csv::Trim::All)
             .from_reader(input);
@@ -119,8 +115,14 @@ fn read_input_files(opts: &Opts, people: &mut Vec<Person>) -> io::Result<()> {
 
 
 fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
+
+    let output_field_separator = match opts.output_field_separator {
+        Some(o) => o,
+        None => opts.input_field_separator
+    };
+
     let mut writer = csv::WriterBuilder::new()
-        .delimiter(opts.output_separator as u8)
+        .delimiter(output_field_separator as u8)
         .has_headers(opts.output_has_header)
         .terminator(csv::Terminator::CRLF)
         .from_writer(io::stdout());
@@ -136,15 +138,13 @@ fn write_output(opts: &Opts, people: &Vec<Person>) -> Result<(), io::Error> {
 
 }
 
-fn sorting_fields(opts: &Opts) -> Vec<(&str, &SortDirection)> {
-    let mut sort_direction_mappings = opts.sort_direction_mappings.clone();
+fn sorting_fields(opts: &Opts) -> Vec<(&str, SortDirection)> {
+    let mut sort_direction_mappings = VecDeque::from(opts.sort_direction_mappings.clone());
     let field_names: Vec<&str> = opts.fields.iter()
         .map(String::as_str)
         .collect();
 
-    sort_direction_mappings.reverse();
-
-    field_names.iter().map(|&name| match sort_direction_mappings.pop() {
+    field_names.iter().map(|&name| match sort_direction_mappings.pop_front() {
         Some(sd) => (name, sd),
         None => (name, opts.sort_direction)
     }).collect()
@@ -155,11 +155,11 @@ fn main() -> io::Result<()> {
     set_console_logger().unwrap();
 
     let opts: Opts = Opts::parse();
-    let mut people: Vec<Person> = vec![];
     let fields = sorting_fields(&opts);
+    let mut people: Vec<Person> = vec![];
 
     if opts.available_fields {
-        println!("{:?}", Person::struct_fields());
+        println!("{}", Person::struct_fields().join(", "));
         return Ok(());
     }
 

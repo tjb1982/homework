@@ -17,7 +17,7 @@ fn new_person() {
     assert!(person.last_name.eq(last_name));
     assert!(person.email.eq(email));
     assert!(person.favorite_color.eq(favorite_color));
-    assert!(person.dob.eq(&Some(NaiveDate::parse_from_str(dob, FORMAT).unwrap())));
+    assert!(person.dob.eq(&Some(NaiveDate::parse_from_str(dob, date_format::FORMAT).unwrap())));
 }
 
 
@@ -34,7 +34,7 @@ mod sorting {
         ]
     }
     
-    fn create_people_sorted_by_fields(fields: Vec<(&str, &SortDirection)>) -> Vec<Person> {
+    fn create_people_sorted_by_fields(fields: Vec<(&str, SortDirection)>) -> Vec<Person> {
         let mut people = create_people();
 
         people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
@@ -64,7 +64,7 @@ mod sorting {
     #[test]
     fn first_name_sort() {
         let people = create_people_sorted_by_fields(vec![
-            ("first_name", &SortDirection::Asc)
+            ("first_name", SortDirection::Asc)
         ]);
         
         assert!(people[0].first_name.eq("Chester"));
@@ -76,7 +76,7 @@ mod sorting {
     #[test]
     fn last_name_sort() {
         let people = create_people_sorted_by_fields(vec![
-            ("last_name", &SortDirection::Asc)
+            ("last_name", SortDirection::Asc)
         ]);
 
         assert!(people[0].first_name.eq("Tom"));
@@ -88,8 +88,8 @@ mod sorting {
     #[test]
     fn last_then_first_sort() {
         let people = create_people_sorted_by_fields(vec![
-            ("last_name", &SortDirection::Asc),
-            ("first_name", &SortDirection::Desc)
+            ("last_name", SortDirection::Asc),
+            ("first_name", SortDirection::Desc)
         ]);
 
         assert!(people[0].first_name.eq("Tom"));
@@ -101,7 +101,7 @@ mod sorting {
 
 #[allow(unused_imports)]
 mod struct_fields {
-    use crate::struct_fields::StructFieldDeserialize;
+    use crate::serialization::StructFieldDeserialize;
     use super::*;
 
     #[test]
