@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, path::PathBuf};
 use clap::{AppSettings, Clap};
+use log::LevelFilter;
 
 use tokio::io;
 
@@ -65,7 +66,7 @@ fn sorting_fields(opts: &Opts) -> Vec<(&str, SortDirection)> {
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    set_console_logger().unwrap();
+    set_console_logger(LevelFilter::Warn).unwrap();
 
     let opts: Opts = Opts::parse();
     let fields = sorting_fields(&opts);

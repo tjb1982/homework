@@ -18,7 +18,7 @@ impl<'de> Deserializer<'de> for StructFieldsDeserializer<'de> {
         where V: de::Visitor<'de>
     {
         Err(de::Error::custom(
-            "clients are intended to discard this error, which is provided
+            "this error is intended to be discarded; it is provided
                 only as a mechanism to ignore irrelevant values (since this
                 implementation only provides the field names of `struct` types)"
         ))

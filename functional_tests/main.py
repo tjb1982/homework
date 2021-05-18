@@ -3,11 +3,14 @@ import sys, tempfile, csv, subprocess, pandas, pprint, random, time
 
 from gen_people import random_row
 
-PROGRAM_NAME = sys.argv[1] if len(sys.argv) > 1 else None
+
+argc = len(sys.argv)
+
+PROGRAM_NAME = sys.argv[1] if argc > 1 else None
 assert PROGRAM_NAME, "Must provide a path to the program under test. Aborting."
 
-ITERATIONS = int(sys.argv[2]) if len(sys.argv) > 2 else 100
-NAME_LEN = int(sys.argv[3]) if len(sys.argv) > 3 else 10
+ITERATIONS = int(sys.argv[2]) if argc > 2 else 100
+NAME_LEN = int(sys.argv[3]) if argc > 3 else 10
 
 SEPARATORS = [",", "|", " "]
 NUM_INPUT_FILES = 10
@@ -41,9 +44,7 @@ test_cases = [
 ]
 
 
-def incoming(row, pr=False):
-    if pr:
-        print(row)
+def incoming(row):
     return [
         row[LAST_NAME],
         row[FIRST_NAME],
@@ -51,6 +52,7 @@ def incoming(row, pr=False):
         row[FAVORITE_COLOR],
         datetime.strptime(row[DOB], DATE_FORMAT.replace("-", ""))
     ]
+
 
 failures = []
 
