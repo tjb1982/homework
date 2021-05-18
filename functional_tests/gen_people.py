@@ -2,15 +2,22 @@ import string, random
 from datetime import datetime, timedelta
 
 
+from names import names
+
+
 colors = ["red", "green", "blue", "yellow", "orange", "violet", "white", "black", "indigo"]
 tlds = ["com", "gov", "org", "edu", "biz", "co.uk", "dk", "se", "de"]
-
+    
 
 def random_name(length = 10):
     return "{}{}".format(
         random.choice(string.ascii_uppercase),
         "".join(random.choice(string.ascii_lowercase) for i in range(0, length - 1))
     )
+
+
+def random_name_from_list(k = "first_names"):
+    return random.choice(names[k])
 
 
 def random_email(first, last):
@@ -34,8 +41,9 @@ def random_date(fmt):
     return random_date.strftime(fmt)
 
 
-def random_row(fmt, name_len = 10):
-    first, last = random_name(name_len), random_name(name_len)
+def random_row(fmt, *args):
+    first = random_name_from_list("first_names")
+    last = random_name_from_list("last_names")
 
     return [
         last,

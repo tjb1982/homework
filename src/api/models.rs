@@ -42,8 +42,6 @@ impl DbOpts {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ListOptions {
-    // pub offset: Option<usize>,
-    // pub limit: Option<usize>,
     pub direction: Option<SortDirection>,
     pub page: Option<usize>,
     pub per_page: Option<usize>,

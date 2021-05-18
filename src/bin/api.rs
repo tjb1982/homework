@@ -3,10 +3,8 @@ use std::env;
 use log::LevelFilter;
 use warp::Filter;
 use clap::{AppSettings, Clap};
-use tokio::io;
 
 use homework::api::filters;
-use homework::api::handlers;
 use homework::api::models;
 
 

@@ -1,5 +1,5 @@
 use std::convert::Infallible;
-use warp::{Rejection, Reply, hyper::StatusCode, reject, reply::with_status};
+use warp::{hyper::StatusCode, reply::with_status};
 use serde::Serialize;
 
 use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sort_direction::SortDirection};
