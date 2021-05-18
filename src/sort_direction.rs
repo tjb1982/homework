@@ -1,7 +1,8 @@
 use std::{str::FromStr, string::ParseError};
+use serde::Deserialize;
 
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SortDirection {
     Asc,
     Desc

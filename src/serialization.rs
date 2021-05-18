@@ -50,7 +50,7 @@ pub mod date_format {
 
     pub const FORMAT: &'static str = "%-m/%-d/%Y";
 
-    pub fn serialize<S>(
+    pub fn serialize<S> (
         date: &Option<NaiveDate>,
         serializer: S
     ) -> Result<S::Ok, S::Error>

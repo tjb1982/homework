@@ -15,10 +15,3 @@ log4rs = { version = "1.0.0", features = ["ansi_writer"] }
 chrono = "0.4.19"
 tokio = { version = "1.6.0", features = ["full"] }
 warp = "0.3"
-
-futures = { version = "0.3.6", default-features = false, features = ["async-await"] }
-hyper = "0.13"
-serde_json = "1.0"
-route-recognizer = "0.2"
-bytes = "0.5"
-async-trait = "0.1"
