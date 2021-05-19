@@ -38,7 +38,6 @@ impl DbOpts {
 }
 
 
-// The query parameters for list_todos.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ListOptions {

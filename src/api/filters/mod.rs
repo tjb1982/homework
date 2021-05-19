@@ -5,13 +5,17 @@ use crate::api::handlers;
 use crate::person::Person;
 
 
+/// I.e., 2 MiB
+const MAX_BYTES: u64 = (1 << 20) * 2;
+
+/// A filter that provides access to the "database"
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || db.clone())
 }
 
-
+/// A filter that provides a Person deserialized from JSON
 fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Clone {
-    warp::body::content_length_limit(1024 * 16)
+    warp::body::content_length_limit(MAX_BYTES)
         .and(warp::body::json())
 }
 
@@ -24,7 +28,8 @@ impl warp::reject::Reject for InvalidCSV {}
 pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy {
     use warp::hyper::body::Bytes;
     
-    warp::body::bytes()
+    warp::body::content_length_limit(MAX_BYTES)
+        .and(warp::body::bytes())
         .and_then(|buf: Bytes| async move {
 
             let results = crate::io::parse_csv_people_from_reader(
@@ -100,3 +105,6 @@ pub fn create_record_from_json(db: Db)
         .and(with_db(db))
         .and_then(handlers::create_record)
 }
+
+
+mod tests;

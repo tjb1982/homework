@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 use warp::{hyper::StatusCode, reply::with_status};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sort_direction::SortDirection};
 use crate::person::Person;
@@ -32,10 +32,10 @@ pub async fn list_records(opts: ListOptions, db: Db)
 }
 
 
-#[derive(Serialize)]
-struct APIError {
-    reason: &'static str,
-    context: String,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct APIError {
+    pub reason: String,
+    pub context: String,
 }
 
 
@@ -43,7 +43,7 @@ pub fn not_found(context: String) -> Result<warp::reply::WithStatus<warp::reply:
 {
     let status = StatusCode::NOT_FOUND;
     let err = APIError {
-        reason: status.canonical_reason().unwrap(),
+        reason: status.canonical_reason().unwrap().to_string(),
         context,
     };
 

@@ -390,6 +390,7 @@ dependencies = [
  "log",
  "log4rs",
  "serde",
+ "serde_json",
  "tokio",
  "warp",
 ]

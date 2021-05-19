@@ -9,13 +9,13 @@ use crate::sort_direction::SortDirection;
 
 #[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Person {
-    last_name: String,
-    first_name: String,
-    email: String,
-    favorite_color: String,
+    pub last_name: String,
+    pub first_name: String,
+    pub email: String,
+    pub favorite_color: String,
 
     #[serde(with = "date_format")]
-    dob: Option<NaiveDate>,
+    pub dob: Option<NaiveDate>,
 }
 
 
@@ -34,13 +34,13 @@ impl serialization::StructFieldDeserialize for Person {
 
 impl Person {
 
-    pub fn new(first_name: &str, last_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
+    pub fn new(last_name: &str, first_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
         Person {
-            first_name: String::from(first_name),
             last_name: String::from(last_name),
+            first_name: String::from(first_name),
             email: String::from(email),
             favorite_color: String::from(favorite_color),
-            dob: match NaiveDate::parse_from_str(dob, date_format::FORMAT) {
+            dob: match date_format::date_from_str(&dob.to_string()) {
                 Ok(dob) => Some(dob),
                 _ => None
             }
