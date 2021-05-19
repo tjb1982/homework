@@ -48,7 +48,7 @@ python3 ./functional_tests/gen_people.py 500 | cli - file1.csv file2.csv file3.c
 You can also provide a mapping of separator/has-header combinations for each input file using flags.
 
 ```bash
-cli -e true -s"|" -s"," -e true -s" " -- /tmp/file1.csv /tmp/file2.csv /tmp/file3.csv
+cli -e true -s"|" -s"," -e true -s" " -- file1.csv file2.csv file3.csv
 ```
 
 The output can also contain a header:
