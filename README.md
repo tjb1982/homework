@@ -81,7 +81,7 @@ The listing endpoints implement a basic pagination scheme of `page` and `per-pag
 These endpoints also handle a `direction` query param, to indicate what sort direction, `asc` or `desc` (`asc` is the default).
 
 ```
-curl http://localhost:8082/records/color?direction=desc&page=5&per-page=5
+curl "http://localhost:8082/records/color?direction=desc&page=5&per-page=5"
 ```
 
 #### Posting
