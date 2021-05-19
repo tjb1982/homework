@@ -55,15 +55,22 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
     -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible>
 {
 
+    let field = match field.as_str() {
+        "name" => "last_name",
+        "color" => "favorite_color",
+        "birthdate" => "dob",
+        x => x
+    };
     let person_fields = Person::struct_fields();
-    if !person_fields.contains(&field.as_str()) {
+
+    if !person_fields.contains(&field) {
         return not_found(format!("Available fields: {}", person_fields.join(", ")));
     }
 
     let (offset, limit) = pagination(&opts);
 
     let fields = vec![
-        (field.as_str(), opts.direction.unwrap_or(SortDirection::Asc))
+        (field, opts.direction.unwrap_or(SortDirection::Asc))
     ];
 
     let mut people: Vec<Person> = db.lock().await.clone();
