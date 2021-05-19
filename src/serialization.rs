@@ -75,7 +75,10 @@ pub mod date_format {
                 log::trace!("{}: missing optional field", e);
                 None
             },
-            Err(e) => panic!("{}", e)
+            Err(e) => {
+                log::error!("{}", e);
+                None
+            }
         };
         
         Ok(d)

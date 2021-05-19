@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, error::Error, io as stdio, path::PathBuf};
+use std::{collections::VecDeque, error::Error, io::{self as stdio, Read}, path::PathBuf};
 use csv;
 
 use tokio::fs::File;
@@ -42,6 +42,21 @@ pub fn write_output(
 }
 
 
+pub fn parse_csv_people_from_reader(
+    reader: impl Read,
+    input_field_separator: char,
+    input_has_header: bool
+) -> Vec<Result<Person, csv::Error>>
+{
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(input_field_separator as u8)
+        .has_headers(input_has_header)
+        .trim(csv::Trim::All)
+        .from_reader(reader);
+
+    reader.deserialize::<Person>().collect::<Vec<Result<Person, csv::Error>>>()
+}
+
 async fn read_input_file(
     input_field_separator: char,
     input_has_header: bool,
@@ -56,13 +71,10 @@ async fn read_input_file(
         x => File::open(x).await?.read_to_string(&mut input).await
     };
 
-    let mut reader = csv::ReaderBuilder::new()
-        .delimiter(input_field_separator as u8)
-        .has_headers(input_has_header)
-        .trim(csv::Trim::All)
-        .from_reader(input.as_str().as_bytes());
+    let results = parse_csv_people_from_reader(
+        input.as_str().as_bytes(), input_field_separator, input_has_header);
 
-    for result in reader.deserialize::<Person>() {
+    for result in results {
         match result {
             Err(e) => log::warn!("Problem deserializing person: {}", e),
             Ok(p) => people.push(p)

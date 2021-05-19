@@ -80,7 +80,7 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
 }
 
 
-pub async fn create_record(db: Db, record: Person)
+pub async fn create_record(record: Person, db: Db)
     -> Result<impl warp::Reply, Infallible>
 {
     let mut people = db.lock().await;

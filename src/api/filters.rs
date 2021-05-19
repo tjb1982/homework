@@ -1,4 +1,4 @@
-use warp::Filter;
+use warp::{Buf, Filter, Rejection};
 
 use crate::api::models::{self, Db};
 use crate::api::handlers;
@@ -13,6 +13,29 @@ fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infalli
 fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16)
         .and(warp::body::json())
+}
+
+
+#[derive(Debug)]
+struct InvalidCSV;
+impl warp::reject::Reject for InvalidCSV {}
+
+
+pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy {
+    use warp::hyper::body::Bytes;
+    
+    warp::body::bytes()
+        .and_then(|buf: Bytes| async move {
+
+            let results = crate::io::parse_csv_people_from_reader(
+                buf.reader(), ',', false);
+
+            let person = results.into_iter()
+                .next()
+                .expect("Unable to deserialize record from CSV");
+
+            person.map_err(|_| { warp::reject::custom(InvalidCSV) })
+        })
 }
 
 
@@ -50,9 +73,30 @@ pub fn records_sorted_by_column(db: Db)
 pub fn create_record(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
+    create_record_from_csv(db.clone())
+        .or(create_record_from_json(db))
+}
+
+
+pub fn create_record_from_csv(db: Db)
+    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+{
     warp::path("records")
         .and(warp::post())
+        .and(warp::header::exact_ignore_case("content-type", "text/csv"))
+        .and(csv_body())
         .and(with_db(db))
+        .and_then(handlers::create_record)
+}
+
+
+pub fn create_record_from_json(db: Db)
+    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+{
+    warp::path("records")
+        .and(warp::post())
+        .and(warp::header::exact_ignore_case("content-type", "application/json"))
         .and(json_body())
+        .and(with_db(db))
         .and_then(handlers::create_record)
 }

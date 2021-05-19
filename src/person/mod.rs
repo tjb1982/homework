@@ -34,7 +34,7 @@ impl serialization::StructFieldDeserialize for Person {
 
 impl Person {
 
-    fn new(first_name: &str, last_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
+    pub fn new(first_name: &str, last_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
         Person {
             first_name: String::from(first_name),
             last_name: String::from(last_name),
