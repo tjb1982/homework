@@ -75,6 +75,10 @@ The API is a ReST API with the following endpoints:
 - `GET /records/birthdate` - alias for `/records/dob`
 - `GET /records/name` - alias for `/records/last_name`
 
+The listing endpoints implement a basic pagination scheme of `page` and `per-page`, leaving it up to the client to handle the extents (i.e., no proper result-set is returned, with metadata about how many records, int or URI pointing to next page, etc.).
+
+The `POST /records` endpoint takes either `text/csv` or `application/json`.
+
 
 ## Quickstart
 
