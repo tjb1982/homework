@@ -75,8 +75,16 @@ The API is a ReST API with the following endpoints:
 - `GET /records/birthdate` - alias for `/records/dob`
 - `GET /records/name` - alias for `/records/last_name`
 
+#### Listing
 The listing endpoints implement a basic pagination scheme of `page` and `per-page`, leaving it up to the client to handle the extents (i.e., no proper result-set is returned, with metadata about how many records, int or URI pointing to next page, etc.).
 
+These endpoints also handle a `direction` query param, to indicate what sort direction, `asc` or `desc` (`asc` is the default).
+
+```
+curl http://localhost:8082/records/color?direction=desc&page=5&per-page=5
+```
+
+#### Posting
 The `POST /records` endpoint takes either `text/csv` or `application/json`.
 
 
