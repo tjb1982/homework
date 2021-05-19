@@ -1,17 +1,9 @@
 from datetime import datetime
-import sys, tempfile, csv, subprocess, pandas, pprint, random, time, json
+import sys, tempfile, csv, subprocess, pandas, json
 
 from gen_people import random_row
 from test_cases import generate_random_test_cases
 
-argc = len(sys.argv)
-
-PROGRAM_NAME = sys.argv[1] if argc > 1 else None
-assert PROGRAM_NAME, "Must provide a path to the program under test. Aborting."
-
-ITERATIONS = int(sys.argv[2]) if argc > 2 else 10
-NAME_LEN = int(sys.argv[3]) if argc > 3 else 10
-ROWS_PER_FILE = int(sys.argv[4]) if argc > 4 else 100
 
 NUM_INPUT_FILES = 10
 DATE_FORMAT = "%-m/%-d/%Y"
@@ -49,7 +41,7 @@ def generate_tempfiles(num_files, iterations, sep, has_header):
                 writer.writerow(HEADER_ROW)
 
             for i in range(0, iterations):
-                writer.writerow(random_row(DATE_FORMAT, NAME_LEN))
+                writer.writerow(random_row(DATE_FORMAT))
 
     return tmp_files
 
@@ -97,7 +89,7 @@ def progress(passing = True):
     sys.stderr.flush()
 
 
-def compare_model_with_program_under_test(case):
+def compare_model_with_program_under_test(program_name, rows_per_file, case):
         fields = case["fields"]
         field_names, directions = zip(*fields)
         sep = case.get("separator", ",")
@@ -110,7 +102,7 @@ def compare_model_with_program_under_test(case):
 
         tmp_files = generate_tempfiles(
             NUM_INPUT_FILES,
-            ROWS_PER_FILE,
+            rows_per_file,
             sep,
             has_header)
 
@@ -120,7 +112,7 @@ def compare_model_with_program_under_test(case):
             directions)
 
         result = run_program_under_test(
-            PROGRAM_NAME,
+            program_name,
             tmp_files,
             sep,
             has_header, fields)
@@ -159,12 +151,20 @@ def compare_model_with_program_under_test(case):
 
 if __name__ == "__main__":
 
+    argc = len(sys.argv)
+
+    PROGRAM_NAME = sys.argv[1] if argc > 1 else None
+    assert PROGRAM_NAME, "Must provide a path to the program under test. Aborting."
+
+    ITERATIONS = int(sys.argv[2]) if argc > 2 else 10
+    ROWS_PER_FILE = int(sys.argv[3]) if argc > 3 else 100
+
     failures = []
     reports = []
 
-    # for case in test_cases:
     for case in generate_random_test_cases(ITERATIONS, 2):
-        report, failures = compare_model_with_program_under_test(case)
+        report, failures = compare_model_with_program_under_test(
+            PROGRAM_NAME, ROWS_PER_FILE, case)
         reports.append(report)
         failures += failures
 
