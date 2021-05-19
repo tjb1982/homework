@@ -14,6 +14,7 @@ fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infalli
 }
 
 /// A filter that provides a Person deserialized from JSON
+/// Body must be under `MAX_BYTES` length.
 fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(MAX_BYTES)
         .and(warp::body::json())
@@ -24,7 +25,9 @@ fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Cl
 struct InvalidCSV;
 impl warp::reject::Reject for InvalidCSV {}
 
-
+/// Filter that provides a Person deserialized from CSV.
+/// N.B. that the body should not be urlencoded.
+/// Body must be under `MAX_BYTES` size.
 pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy {
     use warp::hyper::body::Bytes;
     
@@ -44,6 +47,7 @@ pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy 
 }
 
 
+/// Filter that combines all of the `records_` filters.
 pub fn records(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
@@ -53,6 +57,9 @@ pub fn records(db: Db)
 }
 
 
+/// Filter that responds with a list of records.
+/// A query-string may be provided with the values encoded in `models::ListOptions`
+/// which provides simple pagination.
 pub fn records_list(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
@@ -64,6 +71,12 @@ pub fn records_list(db: Db)
 }
 
 
+/// Filter that responds with a list of records, similar to `records_list` (incl. pagination),
+/// but also sorts the records ascending, according to the field provided in the path.
+///
+/// E.g., /records/last_name
+///
+/// reponds with a list of records ordered by `Persion.last_name` ascending.
 pub fn records_sorted_by_column(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
@@ -75,6 +88,8 @@ pub fn records_sorted_by_column(db: Db)
 }
 
 
+/// Filter that provides a mechanism for `POST`ing a record to the database.
+/// There are two methods: CSV and JSON. This filter proxies to those.
 pub fn create_record(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
@@ -83,6 +98,9 @@ pub fn create_record(db: Db)
 }
 
 
+/// Filter that provides a POST endpoint for a body containing a single CSV row
+/// representing a record.
+/// Content-Type must be set to exactly `text/csv`. UTF-8 is assumed.
 pub fn create_record_from_csv(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
@@ -95,6 +113,9 @@ pub fn create_record_from_csv(db: Db)
 }
 
 
+/// Filter that provides a POST endpoint for a body containing a single JSON object
+/// representing a record.
+/// Content-Type must be set to exactly `application/json`.
 pub fn create_record_from_json(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {

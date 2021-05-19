@@ -37,7 +37,7 @@ mod sorting {
     fn create_people_sorted_by_fields(fields: Vec<(&str, SortDirection)>) -> Vec<Person> {
         let mut people = create_people();
 
-        people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
+        people.sort_by(|a, b| a.cmp_order_by_fields(b, &fields));
         people.to_vec()
     }
 
@@ -49,7 +49,7 @@ mod sorting {
 
         people1.sort();
         people2.sort_by(
-            |a, b| Person::cmp_order_by_fields(a, b, &vec![])
+            |a, b| a.cmp_order_by_fields(b, &vec![])
         );
 
         for (idx, item) in people1.iter().enumerate() {

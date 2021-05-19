@@ -68,10 +68,10 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
 
     let mut people: Vec<Person> = db.lock().await.clone();
 
-    people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
+    people.sort_by(|a, b| a.cmp_order_by_fields(b, &fields));
 
-    let sorted: Vec<Person> = people
-        .into_iter()
+    let sorted: Vec<&Person> = people
+        .iter()
         .skip(offset)
         .take(limit)
         .collect();

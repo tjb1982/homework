@@ -90,7 +90,7 @@ async fn main() -> io::Result<()> {
         &mut people
     ).await?;
 
-    people.sort_by(|a, b| Person::cmp_order_by_fields(a, b, &fields));
+    people.sort_by(|a, b| a.cmp_order_by_fields(b, &fields));
 
     write_output(output_field_separator, opts.output_has_header, &people)
 }
