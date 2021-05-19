@@ -19,7 +19,7 @@ A library written in [Rust](https://www.rust-lang.org/) that handles sorting and
   * [Rationale](#rationale)
 
 
-There are two clients that use this library: a [CLI interface](src/bin/cli.rs), and an [ReST interface](src/bin/api).
+There are two clients that use this library: a [CLI interface](src/bin/cli.rs), and a [ReST interface](src/bin/api).
 
 ## CLI
 
@@ -48,7 +48,7 @@ python3 ./functional_tests/gen_people.py 500 | cli - file1.csv file2.csv file3.c
 You can also provide a mapping of separator/has-header combinations for each input file using flags.
 
 ```bash
-cli file1.csv -s"|" -e true file2.csv -s"," file3.csv -e true -s" "
+cli -e true -s"|" -s"," -e true -s" " -- /tmp/file1.csv /tmp/file2.csv /tmp/file3.csv
 ```
 
 The output can also contain a header:
