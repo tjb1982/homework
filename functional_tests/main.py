@@ -153,18 +153,20 @@ if __name__ == "__main__":
 
     argc = len(sys.argv)
 
-    PROGRAM_NAME = sys.argv[1] if argc > 1 else None
-    assert PROGRAM_NAME, "Must provide a path to the program under test. Aborting."
+    program_name = sys.argv[1] if argc > 1 else None
+    if not program_name or any(x for x in sys.argv if x in ["-h", "--help"]):
+        print("usage: {} program/under/test test-case-iteration-count rows-per-file ".format(sys.argv[0]))
+        sys.exit(0)
 
-    ITERATIONS = int(sys.argv[2]) if argc > 2 else 10
-    ROWS_PER_FILE = int(sys.argv[3]) if argc > 3 else 100
+    iterations = int(sys.argv[2]) if argc > 2 else 10
+    rows_per_file = int(sys.argv[3]) if argc > 3 else 100
 
     failures = []
     reports = []
 
-    for case in generate_random_test_cases(ITERATIONS, 2):
+    for case in generate_random_test_cases(iterations, 2):
         report, failures = compare_model_with_program_under_test(
-            PROGRAM_NAME, ROWS_PER_FILE, case)
+            program_name, rows_per_file, case)
         reports.append(report)
         failures += failures
 
