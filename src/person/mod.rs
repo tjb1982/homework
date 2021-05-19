@@ -7,6 +7,7 @@ use crate::serialization::{self, date_format};
 use crate::sort_direction::SortDirection;
 
 
+/// `struct` representing a "record"
 #[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Person {
     pub last_name: String,
@@ -19,7 +20,12 @@ pub struct Person {
 }
 
 
+/// Allows for the listing of a `Person`'s fields via serde
+/// See `src/serialization.rs` for more details.
 impl serialization::StructFieldDeserialize for Person {
+
+    /// Returns a list of strings representing the fields
+    /// of a `Person`
     fn struct_fields() -> &'static[&'static str] {
         let mut fields = None;
         
@@ -34,6 +40,7 @@ impl serialization::StructFieldDeserialize for Person {
 
 impl Person {
 
+    /// Convenience method for creating a `Person` from `&str` components.
     pub fn new(last_name: &str, first_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
         Person {
             last_name: String::from(last_name),
@@ -48,13 +55,13 @@ impl Person {
     }
 
 
-    fn cmp_field(a: &Self, b: &Self, field: &str, direction: &SortDirection) -> Ordering {
+    fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering {
         let ord = match field {
-            "first_name" => a.first_name.cmp(&b.first_name),
-            "last_name" => a.last_name.cmp(&b.last_name),
-            "email" => a.email.cmp(&b.email),
-            "favorite_color" => a.favorite_color.cmp(&b.favorite_color),
-            "dob" => a.dob.cmp(&b.dob),
+            "first_name" => self.first_name.cmp(&b.first_name),
+            "last_name" => self.last_name.cmp(&b.last_name),
+            "email" => self.email.cmp(&b.email),
+            "favorite_color" => self.favorite_color.cmp(&b.favorite_color),
+            "dob" => self.dob.cmp(&b.dob),
             _ => {
                 warn!("Field \"{}\" not found: ignoring.", field);
                 Ordering::Equal
@@ -68,7 +75,7 @@ impl Person {
     }
 
 
-    fn cmp_order_by_fields_impl(a: &Self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering {
+    fn cmp_order_by_fields_impl(&self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering {
         if fields.len() == 0 {
             return prev
         }
@@ -78,8 +85,8 @@ impl Person {
                 let rest = fields[1..].to_vec();
                 let (field, direction) = &fields[0];
             
-                match Self::cmp_field(a, b, field, &direction) {
-                    Ordering::Equal => Self::cmp_order_by_fields_impl(a, b, &rest, prev),
+                match self.cmp_field(b, field, &direction) {
+                    Ordering::Equal => self.cmp_order_by_fields_impl(b, &rest, prev),
                     x => x
                 }
             },
@@ -87,10 +94,10 @@ impl Person {
         }    
     }
 
-    pub fn cmp_order_by_fields(a: &Self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering {
+    pub fn cmp_order_by_fields(&self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering {
         match fields.len() {
-            0 => a.cmp(b),
-            _ => Self::cmp_order_by_fields_impl(a, b, fields, Ordering::Equal)
+            0 => self.cmp(b),
+            _ => self.cmp_order_by_fields_impl(b, fields, Ordering::Equal)
         }
     }
 }
