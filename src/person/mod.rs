@@ -94,6 +94,18 @@ impl Person {
         }    
     }
 
+
+    /// Comparator method intended to be passed to `Vec::sort_by`, e.g.,
+    /// ```
+    /// use homework::sort_direction::SortDirection;
+    /// use homework::person::Person;
+    ///
+    /// let mut people = vec![Person::new("Smith", "John", "jsmith@example.com", "chartreuse", "1/1/1900")];
+    /// let ref fields = vec![("favorite_color", SortDirection::Asc), ("last_name", SortDirection::Desc)];
+    ///
+    /// people.sort_by(|a, b| a.cmp_order_by_fields(b, fields));
+    /// ```
+    ///
     pub fn cmp_order_by_fields(&self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering {
         match fields.len() {
             0 => self.cmp(b),

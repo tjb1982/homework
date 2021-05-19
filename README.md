@@ -97,13 +97,13 @@ Once logged in, you have access to the target binaries and python, etc. Run the 
 python3 functional_tests/main.py cli | json_pp | less
 ```
 
-The test suite reports in JSON format, so piping to json_pp and less makes it easier to view the results.
+> N.B. The test suite reports in JSON format, so piping to `json_pp` and `less` makes it easier to view the results.
 
 The test suite also takes a couple of arguments which you can see by passing the `-h` or `--help` flag.
 
 ## Rationale
 
-Although the requirements for the homework assignment were pretty small, and could easily have been done in a dynamic language (such as Python or Clojure), I chose to do it in Rust for several reasons:
+Although the requirements for the homework assignment were pretty small, and could easily have been done in a dynamic language (such as Python or Clojure), I chose to do it in Rust for a few reasons:
 
 ### I love learning
 
@@ -113,6 +113,8 @@ I wanted to take this as an opportunity to learn a new language
 
 Setting up a non-trivial proof-of-concept in an unfamiliar technology is a relatively common on-the-job exercise in the real world. And Rust is a seriously difficult language to learn. One of the best ways I know how to "put my best foot forward" is to show that I can go from zero to "productive" relatively quickly in pretty much any language.
 
+The key word here is "productive," as opposed to "mastered." Rust has a lot of complex concepts around its ownership model, and it will take some time before I feel confidently creative with it, the way I do with, say, JavaScript, Python, or Clojure. Or even C/C++.
+
 ### Rust and its toolchain are a really good fit for the requirements
 
-The Rust ecosystem may not be as mature as the JVM, or Python, ecosystems, etc., but the tools and libraries it does have are particularly well-suited to creating nice-looking, safe/correct, CLIs and microservices.
+The Rust ecosystem may not be as mature as the JVM, or Python, ecosystems, etc., but the tools and libraries it does have are particularly well-suited to creating nice-looking, safe/correct, CLIs and microservices. What makes Rust particularly good for APIs is that it compiles to a static binary and doesn't need garbage collection, like C++; but unlike C++ is much better at producing memory-safe code without sacrificing performance.
