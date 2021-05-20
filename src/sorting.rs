@@ -15,7 +15,6 @@ pub trait FieldsSort: Eq + PartialEq + PartialOrd + Ord {
     fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering;
 
     fn cmp_order_by_fields(&self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering
-        where Self: FieldsSort
     {
         match fields.len() {
             0 => self.cmp(b),
