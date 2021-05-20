@@ -1,8 +1,8 @@
 use std::convert::Infallible;
-use warp::{hyper::StatusCode, reply::with_status};
+use warp::{Rejection, Reply, hyper::StatusCode, reply::with_status};
 use serde::{Serialize, Deserialize};
 
-use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sorting::SortDirection};
+use crate::{api::models::{ListOptions, Db}, sorting::SortDirection};
 use crate::person::Person;
 use crate::sorting::FieldsOrd;
 
@@ -24,11 +24,14 @@ pub async fn list_records(opts: ListOptions, db: Db)
 {
     let (offset, limit) = pagination(&opts);
 
-    let people: Vec<Person> = db.lock().await.clone()
+    let mut people: Vec<Person> = db.lock().await.clone()
         .into_iter()
         .skip(offset)
         .take(limit)
         .collect();
+
+    people.sort_by(|a, b| a.cmp_order_by_fields(b, &vec![]));
+    
     Ok(warp::reply::json(&people))
 }
 
@@ -40,7 +43,7 @@ pub struct APIError {
 }
 
 
-pub fn not_found(context: String) -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible>
+pub fn not_found(context: String) -> Result<impl Reply, Infallible>
 {
     let status = StatusCode::NOT_FOUND;
     let err = APIError {
@@ -52,26 +55,45 @@ pub fn not_found(context: String) -> Result<warp::reply::WithStatus<warp::reply:
 }
 
 
-pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: Db)
-    -> Result<warp::reply::WithStatus<warp::reply::Json>, Infallible>
+pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible>
 {
+    use crate::api::filters;
 
-    let field = match field.as_str() {
-        "name" => "last_name",
-        "color" => "favorite_color",
-        "birthdate" => "dob",
-        x => x
-    };
-    let person_fields = Person::struct_fields();
+    let reason: String;
+    let code;
+    let mut context = String::from("(None)");
 
-    if !person_fields.contains(&field) {
-        return not_found(format!("Available fields: {}", person_fields.join(", ")));
+    if err.is_not_found() {
+        code = StatusCode::NOT_FOUND;
+        reason = "Not found".into();
+    } else if let Some(filters::InvalidCSV) = err.find() {
+        code = StatusCode::BAD_REQUEST;
+        reason = "Unable to parse CSV body".into();
+    } else if let Some(filters::InvalidFilterField { available}) = err.find() {
+        code = StatusCode::NOT_FOUND;
+        reason = "Field not found".into();
+        context = format!("Available fields: {}", available.join(", "));
+    } else {
+        // reason = "Unknown".into();
+        reason = format!("{:?}", err);
+        code = StatusCode::INTERNAL_SERVER_ERROR;
     }
 
+    let json = warp::reply::json(&APIError {
+        reason, context
+    });
+
+    Ok(with_status(json, code))
+}
+
+
+pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: Db)
+    -> Result<impl Reply, Infallible>
+{
     let (offset, limit) = pagination(&opts);
 
     let fields = vec![
-        (field, opts.direction.unwrap_or(SortDirection::Asc))
+        (field.as_str(), opts.direction.unwrap_or(SortDirection::Asc))
     ];
 
     let mut people: Vec<Person> = db.lock().await.clone();
@@ -84,12 +106,12 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
         .take(limit)
         .collect();
 
-    Ok(with_status(warp::reply::json(&sorted), StatusCode::OK))
+    Ok(with_status(warp::reply::json(&sorted), StatusCode::OK))    
 }
 
 
 pub async fn create_record(record: Person, db: Db)
-    -> Result<impl warp::Reply, Infallible>
+    -> Result<impl Reply, Infallible>
 {
     let mut people = db.lock().await;
     people.push(record);

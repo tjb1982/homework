@@ -1,8 +1,11 @@
+use std::convert::Infallible;
+
 use warp::{Buf, Filter, Rejection};
 
 use crate::api::models::{self, Db};
 use crate::api::handlers;
 use crate::person::Person;
+use crate::serialization::StructFieldDeserialize;
 
 
 /// I.e., 2 MiB
@@ -20,10 +23,38 @@ fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Cl
         .and(warp::body::json())
 }
 
+#[derive(Debug)]
+pub struct InvalidFilterField {
+    pub available: &'static [&'static str]
+}
+impl warp::reject::Reject for InvalidFilterField {}
 
 #[derive(Debug)]
-struct InvalidCSV;
+pub struct InvalidCSV;
 impl warp::reject::Reject for InvalidCSV {}
+
+
+async fn filter_field(field: String) -> Result<String, warp::Rejection>
+{
+    let field = match field.as_str() {
+        "name" => "last_name",
+        "color" => "favorite_color",
+        "birthdate" => "dob",
+        x => x
+    }.to_string();
+
+    let person_fields = Person::struct_fields();
+
+    if !person_fields.contains(&field.as_str()) {
+        Err(warp::reject::custom(InvalidFilterField {
+            available: person_fields
+        }))
+        // not_found(format!("Available fields: {}", person_fields.join(", ")))
+    } else {
+        Ok(field)
+    }
+}
+
 
 /// Filter that provides a Person deserialized from CSV.
 /// N.B. that the body should not be urlencoded.
@@ -35,25 +66,37 @@ pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy 
         .and(warp::body::bytes())
         .and_then(|buf: Bytes| async move {
 
+            let rejection = warp::reject::custom(InvalidCSV);
+
             let results = crate::io::parse_csv_people_from_reader(
                 buf.reader(), ',', false);
 
-            let person = results.into_iter()
-                .next()
-                .expect("Unable to deserialize record from CSV");
+            let result = match results.into_iter().next() {
+                Some(result) => result,
+                None => return Err(rejection)
+            };
 
-            person.map_err(|_| { warp::reject::custom(InvalidCSV) })
+            match result {
+                Ok(person) => Ok(person).map_err(|_: csv::Error| rejection),
+                _ => Err(rejection)
+            }
         })
 }
 
 
 /// Filter that combines all of the `records_` filters.
 pub fn records(db: Db)
-    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    -> impl Filter<Extract = impl warp::Reply, Error = Infallible> + Clone
 {
     records_list(db.clone())
         .or(records_sorted_by_column(db.clone()))
         .or(create_record(db))
+        .or(
+            warp::path::end().and_then(|| async {
+                Err::<warp::reply::Json, Rejection>(warp::reject())
+            })
+        )
+        .recover(handlers::handle_rejection)
 }
 
 
@@ -80,8 +123,10 @@ pub fn records_list(db: Db)
 pub fn records_sorted_by_column(db: Db)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
-    warp::path!("records" / String)
+    warp::path("records")
         .and(warp::get())
+        .and(warp::path::param())
+        .and_then(filter_field)
         .and(warp::query::<models::ListOptions>())
         .and(with_db(db))
         .and_then(handlers::list_records_sorted_by_field)

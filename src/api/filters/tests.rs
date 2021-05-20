@@ -76,7 +76,9 @@ mod get {
         assert_eq!(response.status(), 200);
 
         let results = serde_json::from_slice::<Vec<Person>>(response.body());
-        let db_people = db.lock().await;
+        let mut db_people = db.lock().await;
+
+        db_people.sort();
 
         match results {
             Ok(people) => {
@@ -94,7 +96,7 @@ mod get {
     #[tokio::test]
     async fn get_records_sorted_by_bad_column() {
         let db = init_db();
-        let filter = records_sorted_by_column(db.clone());
+        let filter = records(db.clone());
         let response = warp::test::request()
             .path("/records/foo")
             .reply(&filter)
@@ -106,7 +108,7 @@ mod get {
 
         match result {
             Ok(api_error) => {
-                assert!(api_error.reason.eq("Not Found"), "Bad `reason`: {}", api_error.reason);
+                assert!(api_error.reason.eq("Field not found"), "Bad `reason`: {}", api_error.reason);
                 assert!(api_error.context.eq(&format!("Available fields: {}", &Person::struct_fields().join(", "))),
                     "Bad `context`: {}", api_error.context);
             },
@@ -117,7 +119,7 @@ mod get {
 
     async fn get_records_sorted_by_column(column: &'static str, first_idx: usize, last_idx: usize) {
         let db = init_db();
-        let filter = records_sorted_by_column(db.clone());
+        let filter = records(db.clone());
         let response = warp::test::request()
             .path(format!("/records/{}", column).as_str())
             .reply(&filter)

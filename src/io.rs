@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, error::Error, io::{self as stdio, Read, Write}, path::PathBuf};
+use std::{collections::VecDeque, io::{self as stdio, Read, Write}, path::PathBuf};
 use csv;
 
 use tokio::fs::File;
@@ -9,16 +9,20 @@ use crate::person::Person;
 
 fn csv_err_is_broken_pipe(e: &csv::Error) -> bool
 {
-    e.source().unwrap().downcast_ref::<stdio::Error>().unwrap().kind() == stdio::ErrorKind::BrokenPipe
+    match e.kind() {
+        csv::ErrorKind::Io(e) => e.kind() == io::ErrorKind::BrokenPipe,
+        _ => false
+    }
 }
 
 
-pub fn write_output(
-    writer: impl Write,
+pub fn write_output<T> (
+    writer: T,
     output_field_separator: char,
     output_has_header: bool,
     people: &Vec<Person>,
 ) -> Result<(), stdio::Error>
+    where T: Write
 {
 
     let mut writer = csv::WriterBuilder::new()
