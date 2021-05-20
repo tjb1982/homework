@@ -3,8 +3,8 @@ use log::{warn};
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 
-use crate::serialization::{self, date_format};
-use crate::sort_direction::SortDirection;
+use crate::{serialization::{self, date_format}};
+use crate::sorting::{FieldsSort, SortDirection};
 
 
 /// `struct` representing a "record"
@@ -38,22 +38,7 @@ impl serialization::StructFieldDeserialize for Person {
 }
 
 
-impl Person {
-
-    /// Convenience method for creating a `Person` from `&str` components.
-    pub fn new(last_name: &str, first_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
-        Person {
-            last_name: String::from(last_name),
-            first_name: String::from(first_name),
-            email: String::from(email),
-            favorite_color: String::from(favorite_color),
-            dob: match date_format::date_from_str(&dob.to_string()) {
-                Ok(dob) => Some(dob),
-                _ => None
-            }
-        }
-    }
-
+impl FieldsSort for Person {
 
     fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering {
         let ord = match field {
@@ -73,43 +58,22 @@ impl Person {
             _ => ord
         }
     }
+}
 
 
-    fn cmp_order_by_fields_impl(&self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering {
-        if fields.len() == 0 {
-            return prev
-        }
-    
-        match prev {
-            Ordering::Equal => {
-                let rest = fields[1..].to_vec();
-                let (field, direction) = &fields[0];
-            
-                match self.cmp_field(b, field, &direction) {
-                    Ordering::Equal => self.cmp_order_by_fields_impl(b, &rest, prev),
-                    x => x
-                }
-            },
-            _ => prev
-        }    
-    }
+impl Person {
 
-
-    /// Comparator method intended to be passed to `Vec::sort_by`, e.g.,
-    /// ```
-    /// use homework::sort_direction::SortDirection;
-    /// use homework::person::Person;
-    ///
-    /// let mut people = vec![Person::new("Smith", "John", "jsmith@example.com", "chartreuse", "1/1/1900")];
-    /// let ref fields = vec![("favorite_color", SortDirection::Asc), ("last_name", SortDirection::Desc)];
-    ///
-    /// people.sort_by(|a, b| a.cmp_order_by_fields(b, fields));
-    /// ```
-    ///
-    pub fn cmp_order_by_fields(&self, b: &Self, fields: &Vec<(&str, SortDirection)>) -> Ordering {
-        match fields.len() {
-            0 => self.cmp(b),
-            _ => self.cmp_order_by_fields_impl(b, fields, Ordering::Equal)
+    /// Convenience method for creating a `Person` from `&str` components.
+    pub fn new(last_name: &str, first_name: &str, email: &str, favorite_color: &str, dob: &str) -> Person {
+        Person {
+            last_name: String::from(last_name),
+            first_name: String::from(first_name),
+            email: String::from(email),
+            favorite_color: String::from(favorite_color),
+            dob: match date_format::date_from_str(&dob.to_string()) {
+                Ok(dob) => Some(dob),
+                _ => None
+            }
         }
     }
 }

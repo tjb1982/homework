@@ -2,8 +2,9 @@ use std::convert::Infallible;
 use warp::{hyper::StatusCode, reply::with_status};
 use serde::{Serialize, Deserialize};
 
-use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sort_direction::SortDirection};
+use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sorting::SortDirection};
 use crate::person::Person;
+use crate::sorting::FieldsSort;
 
 
 const MAX_PER_PAGE: usize = 50;

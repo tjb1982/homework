@@ -6,7 +6,7 @@ use tokio::io;
 
 use homework::person::Person;
 use homework::serialization::StructFieldDeserialize;
-use homework::sort_direction::SortDirection;
+use homework::sorting::{SortDirection, FieldsSort};
 use homework::io::*;
 use homework::log::*;
 
@@ -92,5 +92,10 @@ async fn main() -> io::Result<()> {
 
     people.sort_by(|a, b| a.cmp_order_by_fields(b, &fields));
 
-    write_output(output_field_separator, opts.output_has_header, &people)
+    write_output(
+        std::io::stdout(),
+        output_field_separator,
+        opts.output_has_header,
+        &people
+    )
 }

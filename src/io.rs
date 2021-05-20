@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, error::Error, io::{self as stdio, Read}, path::PathBuf};
+use std::{collections::VecDeque, error::Error, io::{self as stdio, Read, Write}, path::PathBuf};
 use csv;
 
 use tokio::fs::File;
@@ -14,9 +14,10 @@ fn csv_err_is_broken_pipe(e: &csv::Error) -> bool
 
 
 pub fn write_output(
+    writer: impl Write,
     output_field_separator: char,
     output_has_header: bool,
-    people: &Vec<Person>
+    people: &Vec<Person>,
 ) -> Result<(), stdio::Error>
 {
 
@@ -24,7 +25,7 @@ pub fn write_output(
         .delimiter(output_field_separator as u8)
         .has_headers(output_has_header)
         .terminator(csv::Terminator::CRLF)
-        .from_writer(stdio::stdout());
+        .from_writer(writer);
 
     for result in people.iter().map(|p| writer.serialize(p)) {
         match result {

@@ -1,7 +1,7 @@
 use serde::{Deserialize};
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
-use crate::{person::Person, sort_direction::SortDirection};
+use crate::{person::Person, sorting::SortDirection};
 use crate::io::read_input_files;
 
 
