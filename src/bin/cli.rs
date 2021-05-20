@@ -6,7 +6,7 @@ use tokio::io;
 
 use homework::person::Person;
 use homework::serialization::StructFieldDeserialize;
-use homework::sorting::{SortDirection, FieldsSort};
+use homework::sorting::{SortDirection, FieldsOrd};
 use homework::io::*;
 use homework::log::*;
 

@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::{api::models::{ListOptions, Db}, serialization::StructFieldDeserialize, sorting::SortDirection};
 use crate::person::Person;
-use crate::sorting::FieldsSort;
+use crate::sorting::FieldsOrd;
 
 
 const MAX_PER_PAGE: usize = 50;

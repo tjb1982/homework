@@ -10,7 +10,7 @@ pub enum SortDirection {
 }
 
 
-pub trait FieldsSort: Eq + PartialEq + PartialOrd + Ord {
+pub trait FieldsOrd: Eq + PartialEq + PartialOrd + Ord {
 
     fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering;
 
@@ -41,7 +41,7 @@ impl FromStr for SortDirection {
 
 
 fn cmp_order_by_fields<T>(a: &T, b: &T, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering
-    where T: FieldsSort + ?Sized
+    where T: FieldsOrd + ?Sized
 {
     if fields.len() == 0 {
         return prev

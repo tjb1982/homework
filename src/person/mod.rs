@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 
 use crate::{serialization::{self, date_format}};
-use crate::sorting::{FieldsSort, SortDirection};
+use crate::sorting::{FieldsOrd, SortDirection};
 
 
 /// `struct` representing a "record"
@@ -38,7 +38,7 @@ impl serialization::StructFieldDeserialize for Person {
 }
 
 
-impl FieldsSort for Person {
+impl FieldsOrd for Person {
 
     fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering {
         let ord = match field {
