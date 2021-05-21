@@ -69,11 +69,7 @@ You can also discover what fields there are using `-a`.
 
 The API is a ReST API with the following endpoints:
 
-- `POST /records` - post a single data line
-    - `Content-Type: text/csv`
-        - CSV (with `','` separator and no header)
-    - `Content-Type: application/json`
-        - JSON with fields as [described above](#homework)
+- `POST /records` - post a single data line of either `text/csv` or `application/json`
 - `GET /records/:field_name` - returns records sorted by `:field_name`
 - `GET /records/color` - alias for `/records/favorite_color`
 - `GET /records/birthdate` - alias for `/records/dob`
@@ -89,7 +85,29 @@ curl "http://localhost:8082/records/color?direction=desc&page=5&per-page=5"
 ```
 
 #### Posting
-The `POST /records` endpoint takes either `text/csv` or `application/json`.
+The `POST /records` endpoint takes either `text/csv` or `application/json` in the `Content-Type` header.
+
+##### text/csv
+For `text/csv`, the body should contain a single line of CSV. The separator should be `','` and there should be no header:
+
+```
+Brennan, Tom, tjb1982@gmail.com, red, 8/19/1982
+```
+
+> N.B., space around all values will be trimmed.
+
+##### application/json
+For `application/json`, the body should contain an Object with key/value pairs:
+
+```json
+{
+    "last_name": "Brennan",
+    "first_name": "Tom",
+    "email": "tjb1982@gmail.com",
+    "favorite_color": "red",
+    "dob": "8/19/1982"
+}
+```
 
 
 ## Quickstart
@@ -113,7 +131,7 @@ Once logged in, you have access to the target binaries and python, etc. Run the 
 python3 functional_tests/main.py cli | json_pp | less
 ```
 
-> N.B. The test suite reports in JSON format, so piping to `json_pp` and `less` makes it easier to view the results.
+> N.B., the test suite reports in JSON format, so piping to `json_pp` and `less` makes it easier to view the results.
 
 The test suite also takes a couple of arguments which you can see by passing the `-h` or `--help` flag.
 
