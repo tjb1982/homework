@@ -11,6 +11,19 @@ use crate::serialization::StructFieldDeserialize;
 /// I.e., 2 MiB
 const MAX_BYTES: u64 = (1 << 20) * 2;
 
+
+#[derive(Debug)]
+pub struct InvalidFilterField {
+    pub available: &'static [&'static str]
+}
+impl warp::reject::Reject for InvalidFilterField {}
+
+
+#[derive(Debug)]
+pub struct InvalidCSV;
+impl warp::reject::Reject for InvalidCSV {}
+
+
 /// A filter that provides access to the "database"
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || db.clone())
@@ -23,17 +36,8 @@ fn json_body() -> impl Filter<Extract = (Person,), Error = warp::Rejection> + Cl
         .and(warp::body::json())
 }
 
-#[derive(Debug)]
-pub struct InvalidFilterField {
-    pub available: &'static [&'static str]
-}
-impl warp::reject::Reject for InvalidFilterField {}
 
-#[derive(Debug)]
-pub struct InvalidCSV;
-impl warp::reject::Reject for InvalidCSV {}
-
-
+/// Filter that rejects an invalid field name.
 async fn filter_field(field: String) -> Result<String, warp::Rejection>
 {
     let field = match field.as_str() {
@@ -64,7 +68,7 @@ pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy 
     
     warp::body::content_length_limit(MAX_BYTES)
         .and(warp::body::bytes())
-        .and_then(|buf: Bytes| async move {
+        .and_then(|buf: Bytes| async {
 
             let rejection = warp::reject::custom(InvalidCSV);
 
@@ -93,7 +97,7 @@ pub fn records(db: Db)
         .or(create_record(db))
         .or(
             warp::path::end().and_then(|| async {
-                Err::<warp::reply::Json, Rejection>(warp::reject())
+                Err::<warp::reply::Response, Rejection>(warp::reject())
             })
         )
         .recover(handlers::handle_rejection)
