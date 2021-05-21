@@ -69,7 +69,11 @@ You can also discover what fields there are using `-a`.
 
 The API is a ReST API with the following endpoints:
 
-- `POST /records` - Post a single data line in any of the 3 formats supported by your existing code
+- `POST /records` - post a single data line
+    - `Content-Type: text/csv`
+        - CSV (with `','` separator and no header)
+    - `Content-Type: application/json`
+        - JSON with fields as [described above](#homework)
 - `GET /records/:field_name` - returns records sorted by `:field_name`
 - `GET /records/color` - alias for `/records/favorite_color`
 - `GET /records/birthdate` - alias for `/records/dob`
