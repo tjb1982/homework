@@ -25,6 +25,18 @@ mod sorting {
 
     use super::*;
 
+
+    #[macro_export]
+    macro_rules! assert_field_order {
+        ($db:ident, $field:ident, $names:expr) => {
+            for (idx, expected) in $names.iter().enumerate() {
+                let actual = &$db[idx].$field;
+                assert!(expected.eq(&actual.as_str()), "expected: \"{}\", actual: \"{}\"", expected, actual);
+            }
+        };
+    }
+    
+
     fn create_people() -> [Person; 4] {
         [
             Person::new("Brennan","Tom", "tjb1982@gmail.com", "red", "8/19/1982"),
@@ -55,10 +67,8 @@ mod sorting {
         for (idx, item) in people1.iter().enumerate() {
             assert!(item.first_name.eq(&people2[idx].first_name));
         }
-        assert!(people2[0].first_name.eq("Chester"));
-        assert!(people2[1].first_name.eq("June"));
-        assert!(people2[2].first_name.eq("Tom"));
-        assert!(people2[3].first_name.eq("Rachel"));
+
+        assert_field_order!(people2, first_name, ["Chester", "June", "Tom", "Rachel"]);
     }
 
     #[test]
@@ -67,10 +77,7 @@ mod sorting {
             ("first_name", SortDirection::Asc)
         ]);
         
-        assert!(people[0].first_name.eq("Chester"));
-        assert!(people[1].first_name.eq("June"));
-        assert!(people[2].first_name.eq("Rachel"));
-        assert!(people[3].first_name.eq("Tom"));
+        assert_field_order!(people, first_name, ["Chester", "June", "Rachel", "Tom"]);
     }
 
     #[test]
@@ -79,10 +86,7 @@ mod sorting {
             ("last_name", SortDirection::Asc)
         ]);
 
-        assert!(people[0].first_name.eq("Tom"));
-        assert!(people[1].first_name.eq("Chester"));
-        assert!(people[2].first_name.eq("June"));
-        assert!(people[3].first_name.eq("Rachel"));
+        assert_field_order!(people, first_name, ["Tom", "Chester", "June", "Rachel"]);
     }
 
     #[test]
@@ -92,10 +96,7 @@ mod sorting {
             ("first_name", SortDirection::Desc)
         ]);
 
-        assert!(people[0].first_name.eq("Tom"));
-        assert!(people[1].first_name.eq("June"));
-        assert!(people[2].first_name.eq("Chester"));
-        assert!(people[3].first_name.eq("Rachel"));
+        assert_field_order!(people, first_name, ["Tom", "June", "Chester", "Rachel"]);
     }
 }
 
