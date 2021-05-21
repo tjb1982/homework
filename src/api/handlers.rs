@@ -24,13 +24,15 @@ pub async fn list_records(opts: ListOptions, db: Db)
 {
     let (offset, limit) = pagination(&opts);
 
-    let mut people: Vec<Person> = db.lock().await.clone()
+    let mut people = db.lock().await.clone();
+    
+    people.sort_by(|a, b| a.cmp_order_by_fields(b, &vec![]));
+
+    let people: Vec<Person> = people
         .into_iter()
         .skip(offset)
         .take(limit)
         .collect();
-
-    people.sort_by(|a, b| a.cmp_order_by_fields(b, &vec![]));
     
     Ok(warp::reply::json(&people))
 }
