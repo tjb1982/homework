@@ -11,7 +11,7 @@ pub enum SortDirection {
 
 
 /// Since this trait is private, the method declared here will not be available
-/// outside of this module, thereby making it private. But in order for it to be
+/// outside of this module, making it private. But in order for it to be
 /// useful within the `FieldsOrd` trait, we have to define an implementation for
 /// any type that also implements `FieldsOrd`. Then the compiler knows that any
 /// `FieldsOrd` also has the `FieldsOrdImpl` trait.

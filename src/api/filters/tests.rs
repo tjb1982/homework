@@ -53,6 +53,8 @@ mod get {
     use std::sync::Arc;
     use tokio::sync::Mutex;
 
+    use crate::api::handlers::ResultSet;
+
     use super::*;
     
     fn init_db() -> Arc<Mutex<Vec<Person>>> {
@@ -75,14 +77,16 @@ mod get {
 
         assert_eq!(response.status(), 200);
 
-        let results = serde_json::from_slice::<Vec<Person>>(response.body());
+        let resultset = serde_json::from_slice::<ResultSet>(response.body());
         let mut db_people = db.lock().await;
 
         db_people.sort();
 
-        match results {
-            Ok(people) => {
-                assert_eq!(people.len(), db_people.len());
+        match resultset {
+            Ok(resultset) => {
+                let people = resultset.results;
+                assert_eq!(resultset.count, db_people.len());
+                assert_eq!(people.len(), resultset.length);
                 for (idx, person) in db_people.iter().enumerate() {
                     let (from_db, from_rs) = (person, &people[idx]);
                     assert_eq_person(from_rs, from_db);

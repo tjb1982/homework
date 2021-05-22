@@ -10,31 +10,16 @@ use crate::sorting::FieldsOrd;
 const MAX_PER_PAGE: usize = 50;
 
 
-fn pagination(opts: &ListOptions) -> (usize, usize)
-{
-    let per_page = opts.per_page.unwrap_or(MAX_PER_PAGE);
-    let page = opts.page.unwrap_or(1) - 1;
-
-    (page * per_page, per_page)
-}
-
-
-pub async fn list_records(opts: ListOptions, db: Db)
-    -> Result<impl warp::Reply, Infallible>
-{
-    let (offset, limit) = pagination(&opts);
-
-    let mut people = db.lock().await.clone();
-    
-    people.sort_by(|a, b| a.cmp_order_by_fields(b, &vec![]));
-
-    let people: Vec<Person> = people
-        .into_iter()
-        .skip(offset)
-        .take(limit)
-        .collect();
-    
-    Ok(warp::reply::json(&people))
+#[derive(Serialize, Deserialize)]
+pub struct ResultSet {
+    curr: usize,
+    next: Option<usize>,
+    prev: Option<usize>,
+    first: usize,
+    last: usize,
+    pub count: usize,
+    pub length: usize,
+    pub results: Vec<Person>,
 }
 
 
@@ -89,11 +74,60 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible>
 }
 
 
+fn pagination(opts: &ListOptions) -> (usize, usize, usize)
+{
+    let per_page = opts.per_page.unwrap_or(MAX_PER_PAGE);
+    let page = opts.page.unwrap_or(1);
+    let idx = page - 1;
+
+    (page, idx * per_page, per_page)
+}
+
+
+pub fn resultset(people: Vec<Person>, opts: ListOptions) -> ResultSet
+{
+    let (curr, offset, limit) = pagination(&opts);
+
+    let count = people.len();
+
+    let subset: Vec<Person> = people
+        .into_iter()
+        .skip(offset)
+        .take(limit)
+        .collect();
+
+    let last = count / limit;
+    let next = if curr < last { Some(curr + 1) } else { None };
+    let prev = if curr > 1 { Some(curr - 1) } else { None };
+
+    ResultSet {
+        curr,
+        first: 1,
+        last,
+        next,
+        prev,
+        count: count,
+        length: subset.len(),
+        results: subset,
+    }
+}
+
+
+pub async fn list_records(opts: ListOptions, db: Db)
+    -> Result<impl Reply, Infallible>
+{
+    let mut people = db.lock().await.clone();
+    
+    // people.sort_by(|a, b| a.cmp_order_by_fields(b, &vec![]));
+    people.sort();
+
+    Ok(warp::reply::json(&resultset(people, opts)))
+}
+
+
 pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: Db)
     -> Result<impl Reply, Infallible>
 {
-    let (offset, limit) = pagination(&opts);
-
     let fields = vec![
         (field.as_str(), opts.direction.unwrap_or(SortDirection::Asc))
     ];
@@ -102,13 +136,7 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
 
     people.sort_by(|a, b| a.cmp_order_by_fields(b, &fields));
 
-    let sorted: Vec<&Person> = people
-        .iter()
-        .skip(offset)
-        .take(limit)
-        .collect();
-
-    Ok(with_status(warp::reply::json(&sorted), StatusCode::OK))    
+    Ok(warp::reply::json(&resultset(people, opts)))
 }
 
 
