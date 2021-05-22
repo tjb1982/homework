@@ -10,7 +10,17 @@ pub enum SortDirection {
 }
 
 
-pub trait FieldsOrd: Eq + PartialEq + PartialOrd + Ord {
+/// Since this trait is private, the method declared here will not be available
+/// outside of this module, thereby making it private. But in order for it to be
+/// useful within the `FieldsOrd` trait, we have to define an implementation for
+/// any type that also implements `FieldsOrd`. Then the compiler knows that any
+/// `FieldsOrd` also has the `FieldsOrdImpl` trait.
+trait FieldsOrdImpl {
+    fn _cmp_order_by_fields_impl(&self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering;
+}
+
+
+pub trait FieldsOrd: Eq + Ord + Sized {
 
     fn cmp_field(&self, b: &Self, field: &str, direction: &SortDirection) -> Ordering;
 
@@ -18,7 +28,30 @@ pub trait FieldsOrd: Eq + PartialEq + PartialOrd + Ord {
     {
         match fields.len() {
             0 => self.cmp(b),
-            _ => cmp_order_by_fields(self, b, fields, Ordering::Equal)
+            _ => self._cmp_order_by_fields_impl(b, fields, Ordering::Equal)
+        }
+    }
+}
+
+
+impl<T: FieldsOrd> FieldsOrdImpl for T {
+    fn _cmp_order_by_fields_impl(&self, b: &Self, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering
+    {
+        if fields.len() == 0 {
+            return prev
+        }
+
+        match prev {
+            Ordering::Equal => {
+                let rest = fields[1..].to_vec();
+                let (field, direction) = &fields[0];
+            
+                match self.cmp_field(b, field, &direction) {
+                    Ordering::Equal => self._cmp_order_by_fields_impl(b, &rest, prev),
+                    x => x
+                }
+            },
+            _ => prev
         }
     }
 }
@@ -37,26 +70,4 @@ impl FromStr for SortDirection {
             },
         }
     }
-}
-
-
-fn cmp_order_by_fields<T>(a: &T, b: &T, fields: &Vec<(&str, SortDirection)>, prev: Ordering) -> Ordering
-    where T: FieldsOrd + ?Sized
-{
-    if fields.len() == 0 {
-        return prev
-    }
-
-    match prev {
-        Ordering::Equal => {
-            let rest = fields[1..].to_vec();
-            let (field, direction) = &fields[0];
-        
-            match a.cmp_field(b, field, &direction) {
-                Ordering::Equal => cmp_order_by_fields(a, b, &rest, prev),
-                x => x
-            }
-        },
-        _ => prev
-    }    
 }
