@@ -95,8 +95,8 @@ pub fn resultset(people: Vec<Person>, opts: ListOptions) -> ResultSet
         .skip(offset)
         .take(limit)
         .collect();
-
-    let last = count / limit;
+        
+    let last = count / limit + match count % limit { 0 => 0, _ => 1 };
     let next = if curr < last { Some(curr + 1) } else { None };
     let prev = if curr > 1 { Some(curr - 1) } else { None };
 
