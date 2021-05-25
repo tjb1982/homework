@@ -25,7 +25,7 @@ impl warp::reject::Reject for InvalidCSV {}
 
 
 /// A filter that provides access to the "database"
-fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
+fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
     warp::any().map(move || db.clone())
 }
 
@@ -88,18 +88,16 @@ pub fn csv_body() -> impl Filter<Extract = (Person,), Error = Rejection> + Copy 
 }
 
 
-/// Filter that combines all of the `records_` filters.
+/// "Entry point" filter that combines all of the `records_` filters.
 pub fn records(db: Db)
-    -> impl Filter<Extract = impl warp::Reply, Error = Infallible> + Clone
+    -> impl Filter<Extract = impl warp::Reply, Error = Rejection> + Clone
 {
     records_list(db.clone())
         .or(records_sorted_by_column(db.clone()))
         .or(create_record(db))
-        .or(
-            warp::path::end().and_then(|| async {
-                Err::<warp::reply::Response, Rejection>(warp::reject())
-            })
-        )
+        .or(warp::path::end().and_then(|| async {
+            Err::<warp::reply::Response, Rejection>(warp::reject())
+        }))
         .recover(handlers::handle_rejection)
 }
 
@@ -108,7 +106,7 @@ pub fn records(db: Db)
 /// A query-string may be provided with the values encoded in `models::ListOptions`
 /// which provides simple pagination.
 pub fn records_list(db: Db)
-    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    -> impl Filter<Extract = impl warp::Reply, Error = Rejection> + Clone
 {
     warp::path!("records")
         .and(warp::get())

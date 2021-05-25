@@ -46,19 +46,29 @@ impl From<Opts> for models::DbOpts {
 }
 
 
+fn cors() -> warp::cors::Builder {
+    warp::cors()
+        .allow_any_origin()
+        .allow_headers(vec!["content-type"])
+        .allow_methods(vec!["POST"])
+}
+
+
 #[tokio::main]
 async fn main() {
+    homework::log::set_console_logger(LevelFilter::Info).unwrap();
+
     let opts: Opts = Opts::parse();
     let db = models::init_db(opts.clone().into()).await;
-
-    homework::log::set_console_logger(LevelFilter::Info).unwrap();
 
     let addr: Vec<SocketAddr> = opts.hostname
         .to_socket_addrs()
         .expect(format!("Bad hostname: {}", opts.hostname).as_str())
         .collect();
 
-    let api = filters::records(db).with(warp::log("homework"));
+    let api = warp::options().map(warp::reply).or(filters::records(db))
+        .with(cors())
+        .with(warp::log("homework"));
 
     warp::serve(api).run(*addr.first().expect("Address not found.")).await;
 }

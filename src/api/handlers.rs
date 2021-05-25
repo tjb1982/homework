@@ -1,4 +1,3 @@
-use std::convert::Infallible;
 use warp::{Rejection, Reply, hyper::StatusCode, reply::with_status};
 use serde::{Serialize, Deserialize};
 
@@ -30,7 +29,7 @@ pub struct APIError {
 }
 
 
-pub fn not_found(context: String) -> Result<impl Reply, Infallible>
+pub fn not_found(context: String) -> Result<impl Reply, Rejection>
 {
     let status = StatusCode::NOT_FOUND;
     let err = APIError {
@@ -42,7 +41,7 @@ pub fn not_found(context: String) -> Result<impl Reply, Infallible>
 }
 
 
-pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible>
+pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Rejection>
 {
     use crate::api::filters;
 
@@ -95,7 +94,7 @@ pub fn resultset(people: Vec<Person>, opts: ListOptions) -> ResultSet
         .skip(offset)
         .take(limit)
         .collect();
-        
+
     let last = count / limit + match count % limit { 0 => 0, _ => 1 };
     let next = if curr < last { Some(curr + 1) } else { None };
     let prev = if curr > 1 { Some(curr - 1) } else { None };
@@ -114,7 +113,7 @@ pub fn resultset(people: Vec<Person>, opts: ListOptions) -> ResultSet
 
 
 pub async fn list_records(opts: ListOptions, db: Db)
-    -> Result<impl Reply, Infallible>
+    -> Result<impl Reply, Rejection>
 {
     let mut people = db.lock().await.clone();
     
@@ -126,7 +125,7 @@ pub async fn list_records(opts: ListOptions, db: Db)
 
 
 pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: Db)
-    -> Result<impl Reply, Infallible>
+    -> Result<impl Reply, Rejection>
 {
     let fields = vec![
         (field.as_str(), opts.direction.unwrap_or(SortDirection::Asc))
@@ -141,7 +140,7 @@ pub async fn list_records_sorted_by_field(field: String, opts: ListOptions, db: 
 
 
 pub async fn create_record(record: Person, db: Db)
-    -> Result<impl Reply, Infallible>
+    -> Result<impl Reply, Rejection>
 {
     let mut people = db.lock().await;
     people.push(record);
