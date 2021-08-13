@@ -79,7 +79,7 @@ The API is a ReST API with the following endpoints:
 - `GET /records/name` - alias for `/records/last_name`
 
 #### Listing
-The listing endpoints implement a basic pagination scheme of `page` and `per-page`, leaving it up to the client to handle the extents (i.e., no proper result-set is returned, with metadata about how many records, int or URI pointing to next page, etc.).
+The listing endpoints implement a basic pagination scheme of `page` and `per-page` with resultset.
 
 These endpoints also handle a `direction` query param, to indicate what sort direction, `asc` or `desc` (`asc` is the default).
 
